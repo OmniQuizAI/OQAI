@@ -6,6 +6,22 @@ import { GoogleGenAI, Type, Modality } from "@google/genai";
 declare const pdfjsLib: any;
 declare const mammoth: any;
 declare const marked: any;
+declare const jspdf: any;
+
+// Fix: Resolved "Subsequent property declarations" error by using a named interface 'AIStudio'
+// for window.aistudio, ensuring type consistency across declarations.
+// Fix: Moved AIStudio interface into declare global to resolve subsequent property declaration error.
+declare global {
+    interface AIStudio {
+        hasSelectedApiKey: () => Promise<boolean>;
+        openSelectKey: () => Promise<void>;
+    }
+
+    interface Window {
+        aistudio?: AIStudio;
+    }
+}
+
 
 const translations = {
     en: {
@@ -20,11 +36,25 @@ const translations = {
         loadQuizButton: 'Load Quiz',
         invalidQuizCode: 'Invalid Quiz Code. Please check the code and try again.',
         nextButton: 'Next',
-        dropZoneText: 'Drag & drop a file (PDF, DOCX, JPG, PNG) or click to select',
+        dropZoneText: 'Drag & drop files (PDF, DOCX, JPG, PNG) or click to select',
         topicPlaceholder: 'e.g., The Roman Empire',
+        topicLengthLabel: 'Length',
+        short: 'Short',
+        medium: 'Medium',
+        long: 'Long',
         generateUseTextButton: 'Generate & Use Text',
+        // API Key Prompt
+        apiKeyRequiredTitle: 'API Key Required for Image Analysis',
+        apiKeyRequiredInfo: 'To analyze images, you need to select an API key. This action may require a project with billing enabled.',
+        apiKeyLearnMore: 'Learn more about billing.',
+        apiKeyError: "Your API key doesn't have the right permissions. Please select a project with billing enabled and try again.",
+        selectApiKey: 'Select API Key',
+        cancel: 'Cancel',
         // Step 2
         step2Title: 'Step 2: Customize Your Quiz',
+        difficultyLabel: 'Difficulty',
+        easy: 'Easy',
+        hard: 'Hard',
         aiChooseAmountLabel: 'Let AI choose best question amount',
         numQuestionsLabel: 'Number of Questions',
         questionTypesLabel: 'Question Types (select at least one)',
@@ -69,11 +99,15 @@ const translations = {
         analyzingImageLoader: 'Analyzing Image (OCR)...',
         researchingTopicLoader: 'Researching',
         loadingFromCode: 'Loading your quiz...',
+        pdfOcrFallback: 'No text found, trying OCR...',
+        processingFile: 'Processing file',
+        noTextExtracted: 'Could not extract any text from the selected file(s).',
         // Export
         export: 'Export',
         saveAsPdf: 'Save as PDF',
         generateAudio: 'Generate Audio File (.wav)',
         saveToCode: 'Save Quiz to Code',
+        exportToFlashcards: 'Study with Flashcards',
         yourQuizCode: 'Your Quiz Code',
         copy: 'Copy',
         copied: 'Copied!',
@@ -81,6 +115,22 @@ const translations = {
         generatingPdf: 'Generating PDF...',
         generatingAudioFor: 'Generating audio for question',
         combiningAudio: 'Combining audio files...',
+        pdfExportSettings: 'PDF Export Settings',
+        audioExportSettings: 'Audio Export Settings',
+        pdfModalInfo: 'Your quiz will be saved as a PDF file using the Oxygen font for best compatibility.',
+        pauseDuration: 'Pause between items',
+        seconds: 'seconds',
+        // Flashcards
+        preparingFlashcards: 'Preparing your flashcards...',
+        gotItRight: 'Got it right',
+        gotItWrong: 'Got it wrong',
+        dragCardHere: 'Drag card here',
+        flashcardsComplete: 'All Cards Mastered!',
+        studyAgain: 'Study Again',
+        exitFlashcards: 'Exit Flashcards',
+        card: 'Card',
+        flashcardHint: 'Click card to flip, then choose if you got it right or wrong.',
+        goToHomepage: 'Go to Homepage',
     },
     es: {
         // Step 1
@@ -94,11 +144,25 @@ const translations = {
         loadQuizButton: 'Cargar Cuestionario',
         invalidQuizCode: 'Código de cuestionario inválido. Por favor, revisa el código e intenta de nuevo.',
         nextButton: 'Siguiente',
-        dropZoneText: 'Arrastra y suelta un archivo (PDF, DOCX, JPG, PNG) o haz clic para seleccionar',
+        dropZoneText: 'Arrastra y suelta archivos (PDF, DOCX, JPG, PNG) o haz clic para seleccionar',
         topicPlaceholder: 'ej., El Imperio Romano',
+        topicLengthLabel: 'Longitud',
+        short: 'Corto',
+        medium: 'Medio',
+        long: 'Largo',
         generateUseTextButton: 'Generar y Usar Texto',
+        // API Key Prompt
+        apiKeyRequiredTitle: 'Se Requiere Clave de API para Análisis de Imágenes',
+        apiKeyRequiredInfo: 'Para analizar imágenes, necesitas seleccionar una clave de API. Esta acción puede requerir un proyecto con la facturación habilitada.',
+        apiKeyLearnMore: 'Aprende más sobre la facturación.',
+        apiKeyError: "Tu clave de API no tiene los permisos correctos. Por favor, selecciona un proyecto con facturación habilitada e inténtalo de nuevo.",
+        selectApiKey: 'Seleccionar Clave de API',
+        cancel: 'Cancelar',
         // Step 2
         step2Title: 'Paso 2: Personaliza tu Cuestionario',
+        difficultyLabel: 'Dificultad',
+        easy: 'Fácil',
+        hard: 'Difícil',
         aiChooseAmountLabel: 'Dejar que la IA elija la cantidad de preguntas',
         numQuestionsLabel: 'Número de Preguntas',
         questionTypesLabel: 'Tipos de Pregunta (selecciona al menos uno)',
@@ -143,11 +207,15 @@ const translations = {
         analyzingImageLoader: 'Analizando Imagen (OCR)...',
         researchingTopicLoader: 'Investigando',
         loadingFromCode: 'Cargando tu cuestionario...',
+        pdfOcrFallback: 'No se encontró texto, intentando OCR...',
+        processingFile: 'Procesando archivo',
+        noTextExtracted: 'No se pudo extraer texto de los archivos seleccionados.',
         // Export
         export: 'Exportar',
         saveAsPdf: 'Guardar como PDF',
         generateAudio: 'Generar Archivo de Audio (.wav)',
         saveToCode: 'Guardar Cuestionario en Código',
+        exportToFlashcards: 'Estudiar con Tarjetas',
         yourQuizCode: 'Tu Código de Cuestionario',
         copy: 'Copiar',
         copied: '¡Copiado!',
@@ -155,6 +223,22 @@ const translations = {
         generatingPdf: 'Generando PDF...',
         generatingAudioFor: 'Generando audio para la pregunta',
         combiningAudio: 'Combinando archivos de audio...',
+        pdfExportSettings: 'Ajustes de Exportación PDF',
+        audioExportSettings: 'Ajustes de Exportación de Audio',
+        pdfModalInfo: 'Tu cuestionario se guardará como un archivo PDF utilizando la fuente Oxygen para una mejor compatibilidad.',
+        pauseDuration: 'Pausa entre elementos',
+        seconds: 'segundos',
+        // Flashcards
+        preparingFlashcards: 'Preparando tus tarjetas...',
+        gotItRight: '¡Correcto!',
+        gotItWrong: 'Incorrecto',
+        dragCardHere: 'Arrastra la tarjeta aquí',
+        flashcardsComplete: '¡Todas las Tarjetas Dominadas!',
+        studyAgain: 'Estudiar de Nuevo',
+        exitFlashcards: 'Salir de Tarjetas',
+        card: 'Tarjeta',
+        flashcardHint: 'Haz clic en la tarjeta para voltearla, luego elige si la tuviste correcta o incorrecta.',
+        goToHomepage: 'Ir a la Página Principal',
     },
     fr: {
         // Step 1
@@ -168,11 +252,25 @@ const translations = {
         loadQuizButton: 'Charger le Quiz',
         invalidQuizCode: 'Code de quiz invalide. Veuillez vérifier le code et réessayer.',
         nextButton: 'Suivant',
-        dropZoneText: 'Glissez-déposez un fichier (PDF, DOCX, JPG, PNG) ou cliquez pour sélectionner',
+        dropZoneText: 'Glissez-déposez des fichiers (PDF, DOCX, JPG, PNG) ou cliquez pour sélectionner',
         topicPlaceholder: 'ex., L\'Empire Romain',
+        topicLengthLabel: 'Longueur',
+        short: 'Court',
+        medium: 'Moyen',
+        long: 'Long',
         generateUseTextButton: 'Générer et Utiliser le Texte',
+        // API Key Prompt
+        apiKeyRequiredTitle: "Clé API Requise pour l'Analyse d'Image",
+        apiKeyRequiredInfo: "Pour analyser des images, vous devez sélectionner une clé API. Cette action peut nécessiter un projet avec la facturation activée.",
+        apiKeyLearnMore: 'En savoir plus sur la facturation.',
+        apiKeyError: "Votre clé API n'a pas les bonnes autorisations. Veuillez sélectionner un projet avec la facturation activée et réessayer.",
+        selectApiKey: "Sélectionner la Clé d'API",
+        cancel: 'Annuler',
         // Step 2
         step2Title: 'Étape 2: Personnalisez votre Quiz',
+        difficultyLabel: 'Difficulté',
+        easy: 'Facile',
+        hard: 'Difficile',
         aiChooseAmountLabel: "Laisser l'IA choisir le nombre de questions",
         numQuestionsLabel: 'Nombre de Questions',
         questionTypesLabel: 'Types de Questions (sélectionnez-en au moins un)',
@@ -184,7 +282,7 @@ const translations = {
         fillInTheBlank: 'Texte à Trous',
         correctionStyleLabel: 'Style de Correction',
         immediate: 'Immédiate',
-        afterQuiz: 'Après le Quiz',
+        aprèsLeQuiz: 'Après le Quiz',
         both: 'Les Deux',
         spacedRepetitionLabel: 'Mode de Répétition Espacée',
         generateQuizButton: 'Générer le Quiz',
@@ -217,11 +315,15 @@ const translations = {
         analyzingImageLoader: "Analyse de l'Image (OCR)...",
         researchingTopicLoader: 'Recherche sur',
         loadingFromCode: 'Chargement de votre quiz...',
+        pdfOcrFallback: 'Aucun texte trouvé, essai de l\'OCR...',
+        processingFile: 'Traitement du fichier',
+        noTextExtracted: 'Impossible d\'extraire du texte des fichiers sélectionnés.',
         // Export
         export: 'Exporter',
         saveAsPdf: 'Enregistrer en PDF',
         generateAudio: 'Générer un Fichier Audio (.wav)',
         saveToCode: 'Enregistrer le Quiz en Code',
+        exportToFlashcards: 'Étudier avec des Cartes',
         yourQuizCode: 'Votre Code de Quiz',
         copy: 'Copier',
         copied: 'Copié !',
@@ -229,25 +331,66 @@ const translations = {
         generatingPdf: 'Génération du PDF...',
         generatingAudioFor: "Génération de l'audio pour la question",
         combiningAudio: "Combinaison des fichiers audio...",
+        pdfExportSettings: 'Paramètres d\'Exportation PDF',
+        audioExportSettings: 'Paramètres d\'Exportation Audio',
+        pdfModalInfo: 'Votre quiz sera enregistré en tant que fichier PDF en utilisant la police Oxygen pour une meilleure compatibilité.',
+        pauseDuration: 'Pause entre les éléments',
+        seconds: 'secondes',
+        // Flashcards
+        preparingFlashcards: 'Préparation de vos cartes...',
+        gotItRight: 'Correct',
+        gotItWrong: 'Incorrect',
+        dragCardHere: 'Faites glisser la carte ici',
+        flashcardsComplete: 'Toutes les Cartes Maîtrisées !',
+        studyAgain: 'Réviser à Nouveau',
+        exitFlashcards: 'Quitter les Cartes',
+        card: 'Carte',
+        flashcardHint: 'Cliquez sur la carte pour la retourner, puis choisissez si vous avez eu raison ou tort.',
+        goToHomepage: 'Aller à la Page d\'Accueil',
     }
 };
 
 const AppLogo = () => (
-    <svg viewBox="0 0 100 100" className="loading-icon-svg">
+    <svg viewBox="0 0 100 100" className="loading-icon-svg" aria-label="OmniQuiz Logo">
         <defs>
-            <linearGradient id="grad-brain" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style={{stopColor: '#1cb0f6', stopOpacity:1}} />
-                <stop offset="100%" style={{stopColor: '#85d837', stopOpacity:1}} />
+            <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="var(--green)" />
+                <stop offset="100%" stopColor="var(--blue)" />
             </linearGradient>
         </defs>
-        <path fill="url(#grad-brain)" d="M50,10 C27.9,10 10,27.9 10,50 C10,72.1 27.9,90 50,90 C58.5,90 66.5,87.3 73,82.8 C75.9,86.9 80.6,90 86,90 C90.4,90 94.2,87.8 96.5,84.5 C95.8,82.3 95.3,80 95,77.6 C97.6,73.1 99,68 99,62.5 C99,34.6 77,10 50,10 Z M50,18 C72.1,18 90,35.9 90,57.5 C90,62.2 88.9,66.6 87,70.5 C84.8,69.5 82.5,69 80,69 C73.4,69 67.5,72.4 64,77.8 C60,82.6 54.1,82.1 50,82 C27.9,82 18,64.1 18,42 C18,28.7 32.7,18 50,18 Z"></path>
-        <text x="60" y="78" fontFamily="Nunito, sans-serif" fontSize="28" fontWeight="800" fill="#ffffff" textAnchor="middle">2.0</text>
+        {/* The 'O' shape */}
+        <circle cx="50" cy="50" r="45" fill="none" stroke="url(#logo-gradient)" strokeWidth="10" />
+        {/* The 'Q' text in the middle */}
+        <text
+            x="50"
+            y="50"
+            dominantBaseline="central"
+            textAnchor="middle"
+            fontFamily="Nunito, sans-serif"
+            fontSize="65"
+            fontWeight="800"
+            fill="currentColor"
+        >
+            Q
+        </text>
     </svg>
+);
+
+const ThemeToggleButton = ({ theme, toggleTheme }) => (
+    <button className="theme-toggle" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>
+        <svg className="icon sun" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg className="icon moon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+    </button>
 );
 
 
 const App = () => {
-    const [step, setStep] = React.useState('input'); // 'input', 'options', 'quiz', 'results'
+    const [step, setStep] = React.useState('input'); // 'input', 'options', 'quiz', 'results', 'flashcards'
+    const [previousStep, setPreviousStep] = React.useState('input');
     const [contextText, setContextText] = React.useState('');
     const [quizOptions, setQuizOptions] = React.useState({
         numQuestions: 10,
@@ -255,6 +398,7 @@ const App = () => {
         correctionStyle: 'after',
         spacedRepetition: false,
         aiChoosesAmount: false,
+        difficulty: 'medium',
     });
     const [quizData, setQuizData] = React.useState(null);
     const [userAnswers, setUserAnswers] = React.useState([]);
@@ -264,30 +408,58 @@ const App = () => {
         context: null,
     });
     const [language, setLanguage] = React.useState('en');
-    const t = (key) => translations[language][key] || key;
+    const [theme, setTheme] = React.useState(() => {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) return savedTheme;
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        return prefersDark ? 'dark' : 'light';
+    });
 
+    const t = React.useCallback((key) => translations[language][key] || key, [language]);
 
-    const showLoader = (text, context = null) => setLoadingState({ isLoading: true, text, context });
-    const hideLoader = () => setLoadingState({ isLoading: false, text: '', context: null });
+    React.useEffect(() => {
+        document.body.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+    }, [theme]);
 
+    const toggleTheme = () => {
+        setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
+    };
+
+    const showLoader = React.useCallback((text, context = null) => setLoadingState({ isLoading: true, text, context }), []);
+    const hideLoader = React.useCallback(() => setLoadingState({ isLoading: false, text: '', context: null }), []);
+
+    const handleEnterFlashcards = () => {
+        setPreviousStep(step);
+        setStep('flashcards');
+    };
+
+    const handleExitFlashcards = () => {
+        setStep(previousStep);
+    };
 
     const handleContextReady = (text) => {
         setContextText(text);
         setStep('options');
     };
 
-    const handleLoadFromCode = (encodedString) => {
+    // Fix: Add string type to `encodedString` to resolve property access error.
+    const handleLoadFromCode = (encodedString: string) => {
         showLoader(t('loadingFromCode'));
 
-        // Use setTimeout to allow the loader to render before blocking the thread with decoding
         setTimeout(() => {
             try {
-                const jsonString = atob(encodedString.trim());
+                const binaryString = atob(encodedString.trim());
+                const jsonString = decodeURIComponent(
+                    Array.prototype.map.call(binaryString, c => {
+                        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                    }).join('')
+                );
                 const data = JSON.parse(jsonString);
 
                 if (data.quizData && Array.isArray(data.quizData) && data.options) {
                     setQuizData(data.quizData);
-                    setQuizOptions(data.options);
+                    setQuizOptions(prevOptions => ({ ...prevOptions, ...data.options }));
                     setUserAnswers(new Array(data.quizData.length).fill(null).map(() => ({ attempts: [] })));
                     setContextText(data.contextText || '');
                     setStep('quiz');
@@ -300,7 +472,7 @@ const App = () => {
             } finally {
                 hideLoader();
             }
-        }, 50); // A small delay to ensure UI updates
+        }, 50);
     };
 
 
@@ -315,15 +487,15 @@ const App = () => {
                 items: {
                     type: Type.OBJECT,
                     properties: {
-                        question: { type: Type.STRING, description: "The question text. For fill-in-the-blank, use '_____' for the blank. For match-term, use an instruction like 'Match the terms to their definitions.'" },
+                        question: { type: Type.STRING, description: "The question text. For fill-in-the-blank, use '_____' for the blank. For matching, use an instruction like 'Match the terms to their definitions.'" },
                         type: { type: Type.STRING, enum: options.questionTypes },
                         options: { type: Type.ARRAY, items: { type: Type.STRING }, nullable: true, description: "A list of 4 options for multiple-choice questions. Null for other types." },
-                        answer: { type: Type.STRING, nullable: true, description: "The correct answer. For fill-in-the-blank, this is the word for the blank. For short/long answer, this is a model correct answer. Not used for 'match-term'." },
+                        answer: { type: Type.STRING, nullable: true, description: "The correct answer. For fill-in-the-blank, this is the word for the blank. For short/long answer, this is a model correct answer. Not used for 'matching'." },
                         explanation: { type: Type.STRING, description: "A brief explanation of why the answer is correct." },
                         matchPairs: {
                             type: Type.ARRAY,
                             nullable: true,
-                            description: "ONLY for 'match-term' questions. An array of 3 to 5 objects, each with a 'term' and a 'definition'.",
+                            description: "ONLY for 'matching' questions. An array of 3 to 5 objects, each with a 'term' and a 'definition'.",
                             items: {
                                 type: Type.OBJECT,
                                 properties: {
@@ -345,13 +517,21 @@ const App = () => {
                 ? "Based on the length and complexity of the text, generate an appropriate number of questions for a comprehensive quiz. The number should be between 5 and 100."
                 : `Generate a quiz with approximately ${options.numQuestions} questions.`;
             
+            const difficultyMap = {
+                easy: 'simple and straightforward, suitable for beginners.',
+                medium: 'of moderate difficulty, testing good comprehension.',
+                hard: 'challenging, requiring in-depth understanding and critical thinking.'
+            };
+            const difficultyDescription = difficultyMap[options.difficulty] || difficultyMap['medium'];
+
             const prompt = `Based on the following text, ${numQuestionsPrompt}
+            The quiz questions should be ${difficultyDescription}.
             The entire quiz, including all questions, options (for multiple-choice), answers, and explanations, MUST be in ${targetLanguage}.
             The question types should be from this list: [${options.questionTypes.join(', ')}].
             - For 'multiple-choice', provide exactly 4 options.
             - For 'true-false', the answer must be 'True' or 'False'. 
             - For 'fill-in-the-blank', provide a sentence with '_____' as the blank, and the answer should be the word that fills it.
-            - For 'match-term', the 'question' should be an instruction like "Match the following terms to their definitions". Do not provide an 'answer'. Instead, populate the 'matchPairs' field with an array of 3 to 5 objects, where each object has a 'term' and a 'definition'. Keep terms and definitions relatively short.
+            - For 'matching', the 'question' should be an instruction like "Match the following terms to their definitions". Do not provide an 'answer'. Instead, populate the 'matchPairs' field with an array of 3 to 5 objects, where each object has a 'term' and a 'definition'. Keep terms and definitions relatively short.
             - For 'short-answer' and 'long-answer', the question is a prompt and the answer is a detailed model answer derived from the text.
             Provide a brief explanation for each correct answer.
 
@@ -369,15 +549,21 @@ const App = () => {
                     responseSchema: schema,
                 }
             });
-
-            const generatedQuiz = JSON.parse(response.text);
+            
+            let generatedQuiz = JSON.parse(response.text);
+             // Ensure matchPairs is always an array for matching questions
+            generatedQuiz = generatedQuiz.map(q => {
+                if (q.type === 'matching' && !q.matchPairs) {
+                    q.matchPairs = [];
+                }
+                return q;
+            });
             setQuizData(generatedQuiz);
             setUserAnswers(new Array(generatedQuiz.length).fill(null).map(() => ({ attempts: [] })));
             setStep('quiz');
         } catch (error) {
             console.error("Error generating quiz:", error);
-            // This will be caught by the Error Boundary
-            throw new Error(`Quiz generation failed. Details: ${error.message}`);
+            alert(`Quiz generation failed. Details: ${error.message}`);
         } finally {
             hideLoader();
         }
@@ -407,235 +593,337 @@ const App = () => {
             case 'options':
                 return <OptionsStep onConfirm={handleOptionsConfirm} t={t} />;
             case 'quiz':
-                return <QuizStep quizData={quizData} onComplete={handleQuizComplete} options={quizOptions} showLoader={showLoader} hideLoader={hideLoader} t={t} language={language} contextText={contextText} />;
+                return <QuizStep quizData={quizData} onComplete={handleQuizComplete} options={quizOptions} contextText={contextText} t={t} />;
             case 'results':
-                return <ResultsStep quizData={quizData} userAnswers={userAnswers} onRestart={restartQuiz} onTryAgain={tryAgain} showLoader={showLoader} hideLoader={hideLoader} t={t} contextText={contextText} options={quizOptions}/>;
+                return <ResultsStep results={userAnswers} quizData={quizData} onRestart={restartQuiz} onTryAgain={tryAgain} t={t} />;
+             case 'flashcards':
+                return <FlashcardStep quizData={quizData} onExit={handleExitFlashcards} showLoader={showLoader} hideLoader={hideLoader} t={t} language={language} />;
             default:
-                return <div>Error: Unknown step.</div>;
+                return <InputStep onContextReady={handleContextReady} onLoadFromCode={handleLoadFromCode} showLoader={showLoader} hideLoader={hideLoader} t={t} />;
         }
     };
 
     return (
-        <div className="container">
-            <div className="language-selector">
-                <select value={language} onChange={(e) => setLanguage(e.target.value)} disabled={step === 'quiz' || step === 'results'}>
-                    <option value="en">English</option>
-                    <option value="es">Español</option>
-                    <option value="fr">Français</option>
-                </select>
+        <>
+            {loadingState.isLoading && <LoadingScreen text={loadingState.text} context={loadingState.context} />}
+            <div className="container" style={{paddingTop: step === 'flashcards' ? '3rem' : '4rem'}}>
+                <header className="app-header-controls">
+                    {step !== 'input' && (
+                        <button className="home-btn" onClick={restartQuiz} aria-label={t('goToHomepage')}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                        </button>
+                    )}
+                    {(step === 'quiz' || step === 'results') && (
+                        <ExportDropdown
+                            quizData={quizData}
+                            onEnterFlashcards={handleEnterFlashcards}
+                            quizOptions={quizOptions}
+                            contextText={contextText}
+                            showLoader={showLoader}
+                            hideLoader={hideLoader}
+                            t={t}
+                            language={language}
+                        />
+                     )}
+                     <div className="language-selector">
+                        <select value={language} onChange={(e) => setLanguage(e.target.value)} aria-label="Select language">
+                            <option value="en">English</option>
+                            <option value="es">Español</option>
+                            <option value="fr">Français</option>
+                        </select>
+                    </div>
+                    <ThemeToggleButton theme={theme} toggleTheme={toggleTheme} />
+                </header>
+                {step !== 'flashcards' && <h1><AppLogo /> OmniQuiz 2.0</h1>}
+                {renderStep()}
             </div>
-            {loadingState.isLoading && <LoadingScreen loadingText={loadingState.text} contextText={loadingState.context} language={language} />}
-            <h1>OmniQuiz 2.0</h1>
-            {renderStep()}
-        </div>
+        </>
     );
 };
 
-
-const LoadingScreen = ({ loadingText, contextText, language }) => {
-    const [displayEmoji, setDisplayEmoji] = React.useState(null);
-    const [displayFact, setDisplayFact] = React.useState('');
-
-    const APP_FUN_FACTS = {
-        en: [
-            "You can export your quiz as a PDF to study offline!",
-            "Try the 'Generate from Topic' feature to learn about something new.",
-            "The app can generate audio files from your quiz for on-the-go learning.",
-            "Our AI can grade short-answer questions, not just multiple choice.",
-            "You can upload PDF, DOCX, and even image files to create a quiz.",
-            "Challenge yourself with up to 100 questions in a single quiz."
-        ],
-        es: [
-            "¡Puedes exportar tu cuestionario como PDF para estudiar sin conexión!",
-            "Prueba la función 'Generar desde Tema' para aprender sobre algo nuevo.",
-            "La aplicación puede generar archivos de audio de tu cuestionario para aprender sobre la marcha.",
-            "Nuestra IA puede calificar preguntas de respuesta corta, no solo de opción múltiple.",
-            "Puedes subir archivos PDF, DOCX e incluso imágenes para crear un cuestionario.",
-            "Desafíate a ti mismo con hasta 100 preguntas en un solo cuestionario."
-        ],
-        fr: [
-            "Vous pouvez exporter votre quiz au format PDF pour étudier hors ligne !",
-            "Essayez la fonction 'Générer à partir d'un sujet' pour apprendre quelque chose de nouveau.",
-            "L'application peut générer des fichiers audio à partir de votre quiz pour un apprentissage nomade.",
-            "Notre IA peut noter les questions à réponse courte, pas seulement les choix multiples.",
-            "Vous pouvez télécharger des fichiers PDF, DOCX et même des images pour créer un quiz.",
-            "Relevez le défi avec jusqu'à 100 questions dans un seul quiz."
-        ]
-    };
+const LoadingScreen = ({ text, context }) => {
+    const [funFact, setFunFact] = React.useState({ fact: '', emoji: '' });
 
     React.useEffect(() => {
-        let isMounted = true;
-        
-        const getDynamicContent = async () => {
-            try {
-                const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-                const languageMap = { en: 'English', es: 'Spanish', fr: 'French' };
-                const targetLanguage = languageMap[language];
+        const getFunFact = async () => {
+            if (context) {
+                try {
+                    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+                    const factPrompt = `Based on the following text, provide a single, short, interesting "fun fact" and a single relevant emoji. The fact must be in English. Return ONLY a JSON object with "fact" and "emoji" keys.
 
-                // Fetch emoji
-                const emojiPromise = ai.models.generateContent({
-                    model: 'gemini-2.5-flash',
-                    contents: `Based on the following text, what is a single emoji that best represents the main topic? Respond with ONLY the emoji character itself and nothing else.\n\nText: "${contextText.substring(0, 500)}"`,
-                });
-
-                // Fetch fun fact
-                const factPromise = ai.models.generateContent({
-                    model: 'gemini-2.5-flash',
-                    contents: `Analyze the following text and extract a single, interesting, self-contained "fun fact". The fact must be a single, complete sentence in ${targetLanguage}. Do not add any introductory phrases like "Did you know...". Just provide the sentence.\n\nText: "${contextText}"`,
-                });
-                
-                const [emojiResponse, factResponse] = await Promise.all([emojiPromise, factPromise]);
-                
-                if (isMounted) {
-                    setDisplayEmoji(emojiResponse.text.trim());
-                    setDisplayFact(factResponse.text.trim());
-                }
-            } catch (error) {
-                console.error("Error fetching dynamic loading content:", error);
-                if (isMounted) {
-                     // Fallback to app facts if AI fails
-                    const factsInLanguage = APP_FUN_FACTS[language];
-                    setDisplayFact(factsInLanguage[Math.floor(Math.random() * factsInLanguage.length)]);
+                    Text:
+                    ---
+                    ${context.substring(0, 2000)}
+                    ---`;
+                    const response = await ai.models.generateContent({
+                        model: 'gemini-2.5-flash',
+                        contents: factPrompt,
+                        config: {
+                            responseMimeType: 'application/json',
+                            responseSchema: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    fact: { type: Type.STRING },
+                                    emoji: { type: Type.STRING }
+                                },
+                                required: ['fact', 'emoji']
+                            }
+                        }
+                    });
+                    setFunFact(JSON.parse(response.text));
+                } catch (error) {
+                    console.error("Could not fetch fun fact:", error);
                 }
             }
         };
-
-        if (contextText) {
-            getDynamicContent();
-        } else {
-            // Pick a random app fact
-            const factsInLanguage = APP_FUN_FACTS[language];
-            setDisplayFact(factsInLanguage[Math.floor(Math.random() * factsInLanguage.length)]);
-        }
-        
-        return () => { isMounted = false; };
-    }, [contextText, language]);
+        getFunFact();
+    }, [context]);
 
     return (
         <div className="loading-screen">
             <div className="loading-content">
-                <div className="loading-icon">
-                    {displayEmoji ? <span>{displayEmoji}</span> : <AppLogo />}
+                <AppLogo />
+                <p className="loading-text">{text}</p>
+            </div>
+            {funFact.fact && (
+                <div className="loading-fact">
+                    <p>
+                        <span role="img" aria-label="emoji">{funFact.emoji}</span>
+                        {` Fun Fact: ${funFact.fact}`}
+                    </p>
                 </div>
-                <p className="loading-text">{loadingText}</p>
-            </div>
-            <div className="loading-fact">
-                <p>{displayFact}</p>
-            </div>
+            )}
         </div>
     );
 };
+// Fix: Add types for ErrorBoundary props and state
+// Fix: Use React.PropsWithChildren to correctly type children prop and resolve component typing issues.
+type ErrorBoundaryProps = React.PropsWithChildren<{}>;
 
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+    // Fix: Reverted to using a constructor for state initialization. The class property syntax was causing a type inference issue, leading to the "Property 'props' does not exist" error.
+    constructor(props: ErrorBoundaryProps) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+
+    static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+        return { hasError: true, error };
+    }
+
+    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+        console.error("Uncaught error:", error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="error-boundary">
+                    <h1>Oops! Something went wrong.</h1>
+                    <p>We encountered an error while processing your request. Please try again.</p>
+                    <p><i>{this.state.error?.message || 'An unknown error occurred.'}</i></p>
+                    <div className="button-group">
+                        <button className="btn" onClick={() => window.location.reload()}>Refresh Page</button>
+                    </div>
+                </div>
+            );
+        }
+
+        return this.props.children;
+    }
+}
 
 const InputStep = ({ onContextReady, onLoadFromCode, showLoader, hideLoader, t }) => {
     const [activeTab, setActiveTab] = React.useState('paste');
-    const [pastedText, setPastedText] = React.useState('');
+    const [text, setText] = React.useState('');
     const [topic, setTopic] = React.useState('');
-    const [quizCode, setQuizCode] = React.useState('');
-    const [isDragging, setIsDragging] = React.useState(false);
-    const fileInputRef = React.useRef(null);
+    const [topicLength, setTopicLength] = React.useState('medium');
+    const [code, setCode] = React.useState('');
+    const [isDragActive, setIsDragActive] = React.useState(false);
+    const inputRef = React.useRef(null);
 
-    const handleFile = async (file) => {
-        if (!file) return;
-        
-        try {
-            if (file.type === 'application/pdf') {
-                showLoader(t('analyzingPdfLoader'));
+    const processSingleFile = React.useCallback(async (file) => {
+        if (!file) return '';
+
+        if (file.type === 'application/pdf') {
+            return new Promise((resolve, reject) => {
                 const reader = new FileReader();
+                reader.onerror = () => reject(new Error("Error reading PDF file."));
                 reader.onload = async (e) => {
-                    if (e.target.result instanceof ArrayBuffer) {
+                    try {
+                        // Fix: Add type guard to ensure e.target.result is an ArrayBuffer to resolve overload error.
+                        if (!(e.target.result instanceof ArrayBuffer)) {
+                            return reject(new Error("Error reading PDF file: result is not an ArrayBuffer."));
+                        }
                         const typedarray = new Uint8Array(e.target.result);
                         const pdf = await pdfjsLib.getDocument(typedarray).promise;
-                        let text = '';
+                        let fullText = '';
                         for (let i = 1; i <= pdf.numPages; i++) {
                             const page = await pdf.getPage(i);
                             const content = await page.getTextContent();
-                            text += content.items.map(item => item.str).join(' ');
+                            fullText += content.items.map(item => item.str).join(' ');
                         }
-                        onContextReady(text);
+
+                        if (fullText.trim().length < 50) {
+                            showLoader(t('pdfOcrFallback'));
+                            await new Promise(res => setTimeout(res, 1500));
+                            
+                            let ocrText = '';
+                            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+                            for (let i = 1; i <= pdf.numPages; i++) {
+                                showLoader(`${t('analyzingImageLoader')} (PDF Page ${i}/${pdf.numPages})`);
+                                const page = await pdf.getPage(i);
+                                const viewport = page.getViewport({ scale: 2.0 });
+                                const canvas = document.createElement('canvas');
+                                const context = canvas.getContext('2d');
+                                canvas.height = viewport.height;
+                                canvas.width = viewport.width;
+
+                                await page.render({ canvasContext: context, viewport: viewport }).promise;
+                                const base64Data = canvas.toDataURL('image/jpeg').split(',')[1];
+                                
+                                const response = await ai.models.generateContent({
+                                    model: "gemini-2.5-flash",
+                                    contents: { parts: [{ inlineData: { mimeType: 'image/jpeg', data: base64Data } }, { text: "Extract all text from this image." }] },
+                                });
+                                ocrText += response.text + '\n';
+                            }
+                            resolve(ocrText);
+                        } else {
+                            resolve(fullText);
+                        }
+                    } catch (err) {
+                        reject(new Error("Failed to parse PDF file."));
                     }
-                     hideLoader();
                 };
                 reader.readAsArrayBuffer(file);
-            } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-                showLoader(t('analyzingDocxLoader'));
+            });
+        } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+            return new Promise((resolve, reject) => {
                 const reader = new FileReader();
+                reader.onerror = () => reject(new Error("Error reading DOCX file."));
                 reader.onload = async (e) => {
-                    if (e.target.result instanceof ArrayBuffer) {
+                    try {
                         const result = await mammoth.extractRawText({ arrayBuffer: e.target.result });
-                        onContextReady(result.value);
+                        resolve(result.value);
+                    } catch (err) {
+                        reject(new Error("Failed to parse DOCX file."));
                     }
-                    hideLoader();
                 };
                 reader.readAsArrayBuffer(file);
-            } else if (file.type.startsWith('image/')) {
-                 showLoader(t('analyzingImageLoader'));
+            });
+        } else if (file.type.startsWith('image/')) {
+            return new Promise((resolve, reject) => {
                 const reader = new FileReader();
+                reader.onerror = () => reject(new Error("Error reading image file."));
                 reader.onload = async (e) => {
-                    if (typeof e.target.result === 'string') {
+                    try {
+                        // Fix: Add type guard to ensure e.target.result is a string before calling '.split()'.
+                        if (typeof e.target.result !== 'string') {
+                            return reject(new Error("Error reading image file: result is not a string."));
+                        }
                         const base64Data = e.target.result.split(',')[1];
                         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
                         const response = await ai.models.generateContent({
-                            model: 'gemini-2.5-flash',
-                            contents: { parts: [
-                                { inlineData: { mimeType: file.type, data: base64Data } },
-                                { text: "Extract all text from this image." }
-                            ]},
+                            model: "gemini-2.5-flash",
+                            contents: { parts: [{ inlineData: { mimeType: file.type, data: base64Data } }, { text: "Extract the text from this image." }] },
                         });
-                        onContextReady(response.text);
+                        resolve(response.text);
+                    } catch (error) {
+                        reject(new Error(`Failed to process image. Error: ${error.message}`));
                     }
-                    hideLoader();
                 };
                 reader.readAsDataURL(file);
-            } else {
-                alert('Unsupported file type. Please upload a PDF, DOCX, or image file.');
-            }
-        } catch (error) {
-            console.error("Error processing file:", error);
-            throw new Error(`File processing failed. Details: ${error.message}`);
-        }
-    };
-
-    const handleGenerateFromTopic = async () => {
-        if (!topic.trim()) return;
-        showLoader(`${t('researchingTopicLoader')} "${topic}"...`);
-        try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: `Write a detailed summary about "${topic}". The summary should be comprehensive and suitable for generating a quiz. Include key facts, definitions, and concepts.`,
             });
-            setPastedText(response.text);
+        } else {
+            alert("Unsupported file type. Please use PDF, DOCX, JPG, or PNG.");
+            return Promise.resolve('');
+        }
+    }, [showLoader, t]);
+
+    const handleFilesSelected = React.useCallback(async (files) => {
+        if (!files || files.length === 0) return;
+        
+        showLoader('Processing files...');
+        const allTexts = [];
+        
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            showLoader(`${t('processingFile')} ${i + 1} ${t('of')} ${files.length}: ${file.name}`);
+            try {
+                const extractedText = await processSingleFile(file);
+                if (extractedText && extractedText.trim()) {
+                    allTexts.push(extractedText);
+                }
+            } catch (error) {
+                console.error(`Error processing ${file.name}:`, error);
+                alert(`Could not process ${file.name}: ${error.message}`);
+            }
+        }
+        
+        if (allTexts.length > 0) {
+            setText(allTexts.join('\n\n\n--- Document Separator ---\n\n\n'));
             setActiveTab('paste');
-        } catch (error) {
-            console.error("Error generating from topic:", error);
-            throw new Error(`Topic generation failed. Details: ${error.message}`);
-        } finally {
-            hideLoader();
+        } else if (files.length > 0) {
+            alert(t('noTextExtracted'));
+        }
+        
+        hideLoader();
+    }, [processSingleFile, showLoader, hideLoader, t]);
+
+    const handleNext = () => text && onContextReady(text);
+
+    const handleDrag = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") {
+            setIsDragActive(true);
+        } else if (e.type === "dragleave") {
+            setIsDragActive(false);
         }
     };
     
     const handleDrop = (e) => {
         e.preventDefault();
         e.stopPropagation();
-        setIsDragging(false);
+        setIsDragActive(false);
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            handleFile(e.dataTransfer.files[0]);
-            e.dataTransfer.clearData();
+            handleFilesSelected(e.dataTransfer.files);
         }
     };
 
-    const SearchIcon = () => (
-        <svg className="input-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-    );
-
-    const PasteIcon = () => (
-        <svg className="input-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
-    );
+    const handleTopicGenerate = async () => {
+        if (!topic) return;
+        showLoader(`${t('researchingTopicLoader')} "${topic}"...`);
+        try {
+            const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
+            const lengthMap = {
+                short: 'a concise summary of about 600 words',
+                medium: 'a comprehensive text of about 1000 words',
+                long: 'a detailed and in-depth article of about 2000 words'
+            };
+            const lengthDescription = lengthMap[topicLength];
+            const response = await ai.models.generateContent({
+                model: "gemini-2.5-pro",
+                contents: `Generate ${lengthDescription} about the topic: "${topic}". The text should be suitable for generating a quiz. It should be informative, well-structured, and cover key aspects of the topic. The output should be plain text, not markdown.`,
+            });
+            setText(response.text);
+            setActiveTab('paste');
+        } catch (error) {
+            console.error("Error generating text from topic:", error);
+            alert("Failed to generate text from the topic.");
+        } finally {
+            hideLoader();
+        }
+    };
     
-    const CodeIcon = () => (
-        <svg className="input-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
-    );
+    React.useEffect(() => {
+        if (text) hideLoader();
+    }, [text, hideLoader]);
 
     return (
         <div>
@@ -644,995 +932,1013 @@ const InputStep = ({ onContextReady, onLoadFromCode, showLoader, hideLoader, t }
                 <button className={`tab-button ${activeTab === 'paste' ? 'active' : ''}`} onClick={() => setActiveTab('paste')}>{t('pasteTabText')}</button>
                 <button className={`tab-button ${activeTab === 'upload' ? 'active' : ''}`} onClick={() => setActiveTab('upload')}>{t('uploadTabText')}</button>
                 <button className={`tab-button ${activeTab === 'topic' ? 'active' : ''}`} onClick={() => setActiveTab('topic')}>{t('topicTabText')}</button>
-                <button className={`tab-button ${activeTab === 'load' ? 'active' : ''}`} onClick={() => setActiveTab('load')}>{t('loadCodeTabText')}</button>
+                <button className={`tab-button ${activeTab === 'code' ? 'active' : ''}`} onClick={() => setActiveTab('code')}>{t('loadCodeTabText')}</button>
             </div>
-            
             {activeTab === 'paste' && (
-                <div className="tab-content">
-                    <div className="input-group">
-                        <div className="input-wrapper textarea-wrapper">
-                            <PasteIcon />
-                            <textarea 
-                                placeholder={t('pastePlaceholder')}
-                                value={pastedText}
-                                onChange={(e) => setPastedText(e.target.value)}
-                                aria-label="Paste text for quiz"
-                            ></textarea>
-                        </div>
-                    </div>
-                    <div className="button-group">
-                        <button className="btn btn-primary" onClick={() => onContextReady(pastedText)} disabled={!pastedText.trim()}>{t('nextButton')}</button>
-                    </div>
-                </div>
+                <textarea className="textarea" placeholder={t('pastePlaceholder')} value={text} onChange={(e) => setText(e.target.value)}></textarea>
             )}
             {activeTab === 'upload' && (
-                <div className="tab-content">
-                    <div 
-                        role="button"
-                        tabIndex="0"
-                        className={`drop-zone ${isDragging ? 'active' : ''}`}
-                        onClick={() => fileInputRef.current.click()}
-                        onKeyPress={(e) => e.key === 'Enter' && fileInputRef.current.click()}
-                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
-                        onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); }}
-                        onDrop={handleDrop}
-                    >
-                        <p>{t('dropZoneText')}</p>
-                        <input type="file" ref={fileInputRef} onChange={(e) => handleFile(e.target.files[0])} style={{display: 'none'}} accept=".pdf,.docx,.jpg,.jpeg,.png"/>
-                    </div>
+                <div onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} onClick={() => inputRef.current.click()} className={`drop-zone ${isDragActive ? 'active' : ''}`}>
+                    <input ref={inputRef} type="file" hidden onChange={(e) => handleFilesSelected(e.target.files)} accept=".pdf,.docx,.jpg,.jpeg,.png" multiple />
+                    <p>{t('dropZoneText')}</p>
                 </div>
             )}
             {activeTab === 'topic' && (
-                <div className="tab-content">
-                    <div className="input-group">
-                         <div className="input-wrapper">
-                            <SearchIcon />
-                            <input type="text" value={topic} onChange={(e) => setTopic(e.target.value)} placeholder={t('topicPlaceholder')}/>
+                <div>
+                     <input type="text" placeholder={t('topicPlaceholder')} value={topic} onChange={e => setTopic(e.target.value)} />
+                      <div className="input-group" style={{marginTop: '1.5rem'}}>
+                        <label>{t('topicLengthLabel')}</label>
+                        <div className="custom-choice-container">
+                            {['short', 'medium', 'long'].map(length => (
+                                <div className="custom-choice" key={length}>
+                                    <input type="radio" id={`len-${length}`} name="topicLength" value={length} checked={topicLength === length} onChange={(e) => setTopicLength(e.target.value)}/>
+                                    <label htmlFor={`len-${length}`}>{t(length)}</label>
+                                </div>
+                            ))}
                         </div>
                     </div>
-                    <div className="button-group">
-                        <button className="btn btn-primary" onClick={handleGenerateFromTopic} disabled={!topic.trim()}>{t('generateUseTextButton')}</button>
-                    </div>
+                     <div style={{marginTop: '1rem'}}><button className="btn" onClick={handleTopicGenerate} disabled={!topic}>{t('generateUseTextButton')}</button></div>
+                     {text && activeTab === 'topic' && <textarea className="textarea" style={{marginTop: '1rem'}} value={text} readOnly></textarea>}
                 </div>
             )}
-            {activeTab === 'load' && (
-                 <div className="tab-content">
-                    <div className="input-group">
-                        <div className="input-wrapper textarea-wrapper">
-                            <CodeIcon />
-                            <textarea 
-                                placeholder={t('codePlaceholder')}
-                                value={quizCode}
-                                onChange={(e) => setQuizCode(e.target.value)}
-                                aria-label="Paste quiz code"
-                            ></textarea>
-                        </div>
-                    </div>
-                    <div className="button-group">
-                        <button className="btn btn-primary" onClick={() => onLoadFromCode(quizCode)} disabled={!quizCode.trim()}>{t('loadQuizButton')}</button>
-                    </div>
+            {activeTab === 'code' && (
+                <div>
+                    <textarea className="textarea" placeholder={t('codePlaceholder')} value={code} onChange={(e) => setCode(e.target.value)}></textarea>
+                    <div style={{marginTop: '1rem'}}><button className="btn" onClick={() => onLoadFromCode(code)} disabled={!code}>{t('loadQuizButton')}</button></div>
                 </div>
             )}
+            <div className="button-group">
+                <button className="btn btn-primary" onClick={handleNext} disabled={!text || activeTab === 'code'}>{t('nextButton')}</button>
+            </div>
         </div>
     );
 };
 
 const OptionsStep = ({ onConfirm, t }) => {
-    const [numQuestions, setNumQuestions] = React.useState(10);
-    const [aiChoosesAmount, setAiChoosesAmount] = React.useState(false);
-    const [questionTypes, setQuestionTypes] = React.useState(['multiple-choice']);
-    const [correctionStyle, setCorrectionStyle] = React.useState('after');
-    const [spacedRepetition, setSpacedRepetition] = React.useState(false);
+    const [options, setOptions] = React.useState({
+        numQuestions: 10,
+        questionTypes: ['multiple-choice'],
+        correctionStyle: 'after',
+        spacedRepetition: false,
+        aiChoosesAmount: false,
+        difficulty: 'medium',
+    });
 
-    const allQuestionTypes = [
-        { id: 'multiple-choice', label: t('multipleChoice') },
-        { id: 'true-false', label: t('trueFalse') },
-        { id: 'match-term', label: t('matching') },
-        { id: 'short-answer', label: t('shortAnswer') },
-        { id: 'long-answer', label: t('longAnswer') },
-        { id: 'fill-in-the-blank', label: t('fillInTheBlank') },
-    ];
-
-    const handleTypeChange = (typeId) => {
-        setQuestionTypes(prev => 
-            prev.includes(typeId) 
-                ? prev.filter(t => t !== typeId) 
-                : [...prev, typeId]
-        );
+    const handleTypeChange = (type) => {
+        const newTypes = options.questionTypes.includes(type)
+            ? options.questionTypes.filter(t => t !== type)
+            : [...options.questionTypes, type];
+        setOptions({ ...options, questionTypes: newTypes });
     };
+
+    const isConfirmDisabled = options.questionTypes.length === 0;
+
+    const camelCase = (str) => str.replace(/-(\w)/g, (_, c) => c.toUpperCase());
 
     return (
         <div>
             <h2>{t('step2Title')}</h2>
-             <div className="input-group">
-                <div className="toggle-group">
-                    <span className="toggle-label">{t('aiChooseAmountLabel')}</span>
+            <div className="input-group">
+                 <div className="toggle-group">
+                    <label className="toggle-label">{t('aiChooseAmountLabel')}</label>
                     <label className="toggle-switch">
-                        <input type="checkbox" checked={aiChoosesAmount} onChange={(e) => setAiChoosesAmount(e.target.checked)} />
+                        <input type="checkbox" checked={options.aiChoosesAmount} onChange={(e) => setOptions({...options, aiChoosesAmount: e.target.checked})} />
                         <span className="slider"></span>
                     </label>
                 </div>
             </div>
-            <div className="input-group">
-                <label htmlFor="numQuestions">{t('numQuestionsLabel')}: {numQuestions}</label>
-                <input type="range" id="numQuestions" min="5" max="100" value={numQuestions} onChange={(e) => setNumQuestions(Number(e.target.value))} disabled={aiChoosesAmount}/>
-            </div>
+            {!options.aiChoosesAmount && (
+                <div className="input-group">
+                    <label htmlFor="num-questions">{t('numQuestionsLabel')}: {options.numQuestions}</label>
+                    <input type="range" id="num-questions" min="5" max="100" value={options.numQuestions} onChange={(e) => setOptions({ ...options, numQuestions: parseInt(e.target.value, 10) })} />
+                </div>
+            )}
             <div className="input-group">
                 <label>{t('questionTypesLabel')}</label>
-                 <div className="custom-choice-container" role="group" aria-label="Question types">
-                    {allQuestionTypes.map(type => (
-                        <div key={type.id} className="custom-choice">
-                            <input type="checkbox" id={type.id} name="questionType" checked={questionTypes.includes(type.id)} onChange={() => handleTypeChange(type.id)} />
-                            <label htmlFor={type.id}>{type.label}</label>
+                <div className="custom-choice-container">
+                    {['multiple-choice', 'true-false', 'matching', 'short-answer', 'long-answer', 'fill-in-the-blank'].map(type => (
+                        <div className="custom-choice" key={type}>
+                            <input type="checkbox" id={type} value={type} checked={options.questionTypes.includes(type)} onChange={() => handleTypeChange(type)} />
+                            <label htmlFor={type}>{t(camelCase(type))}</label>
                         </div>
                     ))}
                 </div>
             </div>
             <div className="input-group">
+                <label>{t('difficultyLabel')}</label>
+                <div className="custom-choice-container">
+                    {['easy', 'medium', 'hard'].map(level => (
+                        <div className="custom-choice" key={level}>
+                            <input type="radio" id={`diff-${level}`} name="difficulty" value={level} checked={options.difficulty === level} onChange={(e) => setOptions({ ...options, difficulty: e.target.value })}/>
+                            <label htmlFor={`diff-${level}`}>{t(level)}</label>
+                        </div>
+                    ))}
+                </div>
+            </div>
+             <div className="input-group">
                 <label>{t('correctionStyleLabel')}</label>
-                <div className="custom-choice-container" role="radiogroup">
-                     <div className="custom-choice">
-                        <input type="radio" id="immediate" name="correction" value="immediate" checked={correctionStyle === 'immediate'} onChange={(e) => setCorrectionStyle(e.target.value)} />
-                        <label htmlFor="immediate">{t('immediate')}</label>
-                    </div>
-                    <div className="custom-choice">
-                        <input type="radio" id="after" name="correction" value="after" checked={correctionStyle === 'after'} onChange={(e) => setCorrectionStyle(e.target.value)} />
-                        <label htmlFor="after">{t('afterQuiz')}</label>
-                    </div>
-                     <div className="custom-choice">
-                        <input type="radio" id="both" name="correction" value="both" checked={correctionStyle === 'both'} onChange={(e) => setCorrectionStyle(e.target.value)} />
-                        <label htmlFor="both">{t('both')}</label>
-                    </div>
+                <div className="custom-choice-container">
+                     {['immediate', 'after', 'both'].map(style => (
+                        <div className="custom-choice" key={style}>
+                            <input type="radio" id={`corr-${style}`} name="correctionStyle" value={style} checked={options.correctionStyle === style} onChange={(e) => setOptions({ ...options, correctionStyle: e.target.value })}/>
+                            <label htmlFor={`corr-${style}`}>{t(style)}</label>
+                        </div>
+                    ))}
                 </div>
             </div>
             <div className="input-group">
-                <div className="toggle-group">
-                    <span className="toggle-label">{t('spacedRepetitionLabel')}</span>
+                 <div className="toggle-group">
+                    <label className="toggle-label">{t('spacedRepetitionLabel')}</label>
                     <label className="toggle-switch">
-                        <input type="checkbox" checked={spacedRepetition} onChange={(e) => setSpacedRepetition(e.target.checked)} />
+                        <input type="checkbox" checked={options.spacedRepetition} onChange={(e) => setOptions({...options, spacedRepetition: e.target.checked})} />
                         <span className="slider"></span>
                     </label>
                 </div>
             </div>
             <div className="button-group">
-                <button className="btn btn-primary" style={{width: 'auto'}} onClick={() => onConfirm({numQuestions, questionTypes, correctionStyle, spacedRepetition, aiChoosesAmount})} disabled={questionTypes.length === 0}>{t('generateQuizButton')}</button>
+                <button className="btn btn-primary" onClick={() => onConfirm(options)} disabled={isConfirmDisabled}>{t('generateQuizButton')}</button>
             </div>
         </div>
     );
 };
 
-const QuizStep = ({ quizData, onComplete, options, showLoader, hideLoader, t, language, contextText }) => {
-    const { correctionStyle, spacedRepetition } = options;
-    const [answers, setAnswers] = React.useState(() => new Array(quizData.length).fill(null).map(() => ({ attempts: [] })));
+const FlashcardStep = ({ quizData, onExit, showLoader, hideLoader, t, language }) => {
+    const [cards, setCards] = React.useState([]);
+    const [initialCards, setInitialCards] = React.useState([]);
+    const [incorrectPile, setIncorrectPile] = React.useState([]);
+    const [currentIndex, setCurrentIndex] = React.useState(0);
+    const [isFlipped, setIsFlipped] = React.useState(false);
     
-    // State for managing question flow
-    const [questionPool, setQuestionPool] = React.useState(() => quizData.map((_, i) => i));
-    const [poolIndex, setPoolIndex] = React.useState(0);
-    const [quizPhase, setQuizPhase] = React.useState('initial'); // 'initial' or 'review'
+    const totalCards = React.useMemo(() => (initialCards.length > 0 ? initialCards.length : 0), [initialCards]);
 
-    const currentQuestionIndex = questionPool[poolIndex];
-    const currentQuestion = quizData[currentQuestionIndex];
-    const numAttempts = answers[currentQuestionIndex].attempts.length;
+    React.useEffect(() => {
+        const makeCardsConcise = async () => {
+            if (!quizData || quizData.length === 0) return;
+            showLoader(t('preparingFlashcards'));
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+            const languageMap = { en: 'English', es: 'Spanish', fr: 'French' };
+            const targetLanguage = languageMap[language];
 
-    const [selectedOption, setSelectedOption] = React.useState(null);
+            const conciseCards = await Promise.all(quizData.map(async (q, index) => {
+                let question = q.question;
+                let answer = '';
+
+                if (q.type === 'matching') {
+                    answer = q.matchPairs.map(p => `${p.term}: ${p.definition}`).join('\n');
+                } else if (q.type === 'multiple-choice') {
+                    answer = q.answer;
+                }
+                 else {
+                    answer = Array.isArray(q.answer) ? q.answer.join(', ') : q.answer;
+                }
+
+                if (q.type === 'long-answer' || question.length > 150 || (answer && answer.length > 150)) {
+                    const prompt = `Rewrite the following question and answer pair to be more concise for a flashcard. Focus on the key information. Use bullet points or numbered lists (I, II, III) for complex topics. The response MUST be in ${targetLanguage}.
+                    
+                    Original Question: "${question}"
+                    Original Answer: "${answer}"
+
+                    Return ONLY a JSON object with "conciseQuestion" and "conciseAnswer" keys.`;
+                    
+                    try {
+                        const response = await ai.models.generateContent({
+                            model: 'gemini-2.5-flash',
+                            contents: prompt,
+                            config: {
+                                responseMimeType: "application/json",
+                                responseSchema: {
+                                    type: Type.OBJECT,
+                                    properties: {
+                                        conciseQuestion: { type: Type.STRING },
+                                        conciseAnswer: { type: Type.STRING }
+                                    },
+                                    required: ['conciseQuestion', 'conciseAnswer']
+                                }
+                            }
+                        });
+                        const result = JSON.parse(response.text);
+                        question = result.conciseQuestion;
+                        answer = result.conciseAnswer;
+                    } catch (e) {
+                        console.error("Could not make card concise, using original.", e);
+                    }
+                }
+                
+                return { id: index, question, answer };
+            }));
+            
+            setCards(conciseCards);
+            setInitialCards(conciseCards);
+            setIncorrectPile([]);
+            setCurrentIndex(0);
+            hideLoader();
+        };
+
+        makeCardsConcise();
+    }, [quizData, language, t, showLoader, hideLoader]);
+
+    const currentCard = cards[currentIndex];
+    
+    const goToNextCard = (wasCorrect) => {
+        if (!currentCard) return;
+
+        const newIndex = currentIndex + 1;
+        
+        if (!wasCorrect) {
+            setIncorrectPile(prev => [...prev, currentCard]);
+        }
+
+        if (newIndex >= cards.length) {
+            // End of the main deck, switch to incorrect pile if it exists
+            if (incorrectPile.length > 0) {
+                setCards(incorrectPile);
+                setIncorrectPile([]);
+                setCurrentIndex(0);
+            } else {
+                // All cards mastered
+                setCurrentIndex(cards.length); // Signal completion
+            }
+        } else {
+            setCurrentIndex(newIndex);
+        }
+        setIsFlipped(false);
+    };
+    
+    const handleStudyAgain = () => {
+        setCards(initialCards);
+        setCurrentIndex(0);
+        setIncorrectPile([]);
+        setIsFlipped(false);
+    };
+
+    if (cards.length === 0) {
+        return null;
+    }
+
+    if (currentIndex >= cards.length) {
+        return (
+            <div className="flashcard-complete">
+                <AppLogo/>
+                <h2>{t('flashcardsComplete')}</h2>
+                <div className="button-group">
+                    <button className="btn btn-primary" onClick={handleStudyAgain}>{t('studyAgain')}</button>
+                    <button className="btn" onClick={onExit}>{t('exitFlashcards')}</button>
+                </div>
+            </div>
+        );
+    }
+    
+    if (!currentCard) {
+        return null;
+    }
+
+    return (
+        <div className="flashcard-view">
+             <div className="flashcard-header">
+                <button className="btn" onClick={onExit}>&larr; {t('exitFlashcards')}</button>
+                <div className="flashcard-progress">
+                    {t('card')} {initialCards.indexOf(currentCard) + 1} {t('of')} {totalCards}
+                </div>
+            </div>
+
+            <div className="flashcard-scene" onClick={() => setIsFlipped(f => !f)}>
+                <div 
+                    className={`flashcard ${isFlipped ? 'is-flipped' : ''}`} 
+                >
+                    <div className="flashcard-face flashcard-face-front">
+                        {currentCard.question}
+                         <div className="flip-icon" aria-hidden="true">
+                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/><path d="M8 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 4v16"/><path d="m15 7-3-3-3 3"/><path d="m9 17 3 3 3-3"/></svg>
+                        </div>
+                    </div>
+                    <div className="flashcard-face flashcard-face-back">
+                        <div dangerouslySetInnerHTML={{ __html: marked.parse(currentCard.answer || '') }} />
+                    </div>
+                </div>
+            </div>
+             <div className="flashcard-actions">
+                {!isFlipped ? (
+                    <p className="flashcard-hint">{t('flashcardHint')}</p>
+                ) : (
+                    <div className="button-group">
+                        <button className="btn btn-wrong" onClick={() => goToNextCard(false)}>{t('gotItWrong')}</button>
+                        <button className="btn btn-right" onClick={() => goToNextCard(true)}>{t('gotItRight')}</button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+const QuizStep = ({ quizData, onComplete, options, contextText, t }) => {
+    const [currentQuizData, setCurrentQuizData] = React.useState([...quizData]);
+    const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
+    const [userAnswers, setUserAnswers] = React.useState(new Array(quizData.length).fill(null).map(() => ({ attempts: [] })));
+    const [currentAnswer, setCurrentAnswer] = React.useState(null);
     const [feedback, setFeedback] = React.useState(null);
-    const [isAnswered, setIsAnswered] = React.useState(false);
+    const [isGraded, setIsGraded] = React.useState(false);
     const [isGrading, setIsGrading] = React.useState(false);
 
-    const [matchState, setMatchState] = React.useState(null);
+    // For matching game
     const [selectedTerm, setSelectedTerm] = React.useState(null);
     const [selectedDef, setSelectedDef] = React.useState(null);
-    const [incorrectPair, setIncorrectPair] = React.useState(null);
+    const [correctPairs, setCorrectPairs] = React.useState([]);
 
-    const handleAnswer = React.useCallback(async (answer) => {
-        if (answer === null || (typeof answer === 'string' && answer.trim() === '') || isAnswered) return;
-        
-        let answerData: { text: any; isCorrect?: boolean; grade?: string; aiFeedback?: string } = { text: answer };
-
-        if (currentQuestion.type === 'match-term') {
-            answerData.isCorrect = answer === true;
-        } else if (['multiple-choice', 'true-false', 'fill-in-the-blank'].includes(currentQuestion.type)) {
-            answerData.isCorrect = answer.toLowerCase().trim() === currentQuestion.answer.toLowerCase().trim();
-        } else if (['short-answer', 'long-answer'].includes(currentQuestion.type)) {
-            setIsGrading(true);
-            try {
-                const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-                const languageMap = { en: 'English', es: 'Spanish', fr: 'French' };
-                const targetLanguage = languageMap[language];
-                const gradingSchema = {
-                    type: Type.OBJECT,
-                    properties: {
-                        assessment: { type: Type.STRING, enum: ['correct', 'incorrect', 'partially-correct'] },
-                        feedback: { type: Type.STRING, description: "A brief explanation for the assessment. For partially-correct, explain what's missing. For incorrect, explain the error." }
-                    },
-                    required: ['assessment', 'feedback']
-                };
-                const prompt = `Please assess the student's answer based on the model answer provided.
-                - Model Answer: "${currentQuestion.answer}"
-                - Student's Answer: "${answer}"
-                - Determine if the student's answer is 'correct', 'incorrect', or 'partially-correct'.
-                - 'partially-correct' means the student understood the main idea but missed some key details from the model answer.
-                - Provide brief feedback explaining your assessment. The feedback MUST be in ${targetLanguage}.
-                `;
-                const response = await ai.models.generateContent({
-                    model: 'gemini-2.5-flash',
-                    contents: prompt,
-                    config: { responseMimeType: 'application/json', responseSchema: gradingSchema }
-                });
-                const grade = JSON.parse(response.text);
-                answerData.grade = grade.assessment;
-                answerData.aiFeedback = grade.feedback;
-            } catch(error) {
-                console.error("Error grading answer:", error);
-                throw new Error(`AI grading failed. Details: ${error.message}`);
-            } finally {
-                setIsGrading(false);
-            }
+    const currentQuestion = currentQuizData[currentQuestionIndex];
+    
+    // FIX: Moved useMemo to the top level of the component to obey the Rules of Hooks.
+    // It was previously inside renderAnswerField, which is not a component or a hook,
+    // and was being called conditionally, causing the "Rendered more hooks" error.
+    const shuffledDefs = React.useMemo(() => {
+        if (currentQuestion?.type === 'matching' && currentQuestion.matchPairs) {
+            return [...currentQuestion.matchPairs.map(p => p.definition)].sort(() => Math.random() - 0.5);
         }
-        
-        const newAnswers = [...answers];
-        newAnswers[currentQuestionIndex].attempts.push(answerData);
-        setAnswers(newAnswers);
+        return [];
+    }, [currentQuestion]);
 
-        if (correctionStyle === 'immediate' || correctionStyle === 'both') {
-            if (answerData.grade) {
-                 setFeedback({ class: answerData.grade, text: `**${answerData.grade.replace('-', ' ')}!** ${answerData.aiFeedback}` });
-            } else if (currentQuestion.type === 'match-term') {
-                 setFeedback({ class: 'correct', text: "**Excellent!** All pairs matched correctly." });
-            }
-             else {
-                setFeedback({
-                    class: answerData.isCorrect ? 'correct' : 'incorrect',
-                    text: answerData.isCorrect ? `**Correct!** ${currentQuestion.explanation}` : `**Incorrect.** The correct answer is: *${currentQuestion.answer}*. ${currentQuestion.explanation}`
-                });
-            }
-        }
-        setIsAnswered(true);
-    }, [answers, currentQuestionIndex, currentQuestion, correctionStyle, isAnswered, language]);
-
-    React.useEffect(() => {
-        const question = quizData[currentQuestionIndex];
-        if (question.type === 'match-term' && question.matchPairs) {
-            const terms = question.matchPairs.map((p, i) => ({ id: i, text: p.term, matched: false }));
-            const definitions = question.matchPairs.map((p, i) => ({ id: i, text: p.definition, matched: false }));
-            for (let i = definitions.length - 1; i > 0; i--) { // Shuffle definitions
-                const j = Math.floor(Math.random() * (i + 1));
-                [definitions[i], definitions[j]] = [definitions[j], definitions[i]];
-            }
-            setMatchState({ terms, definitions });
-        } else {
-            setMatchState(null);
-        }
-        
-        setSelectedOption(null);
+    const resetQuestionState = React.useCallback(() => {
+        setIsGraded(false);
         setFeedback(null);
-        setIsAnswered(false);
         setIsGrading(false);
-        setSelectedTerm(null);
-        setSelectedDef(null);
-        setIncorrectPair(null);
-        
-    }, [currentQuestionIndex, quizData]);
-
-    React.useEffect(() => {
-        if (!selectedTerm || !selectedDef) return;
-        if (selectedTerm.id === selectedDef.id) { // Correct match
-            setMatchState(prevState => {
-                const newTerms = prevState.terms.map(t => t.id === selectedTerm.id ? { ...t, matched: true } : t);
-                const newDefs = prevState.definitions.map(d => d.id === selectedDef.id ? { ...d, matched: true } : d);
-                if (newTerms.every(t => t.matched)) handleAnswer(true);
-                return { terms: newTerms, definitions: newDefs };
-            });
-        } else { // Incorrect match
-            setIncorrectPair({ termId: selectedTerm.id, defId: selectedDef.id });
-            setTimeout(() => setIncorrectPair(null), 800);
+        if (currentQuizData[currentQuestionIndex + 1]?.type === 'matching') {
+            setCurrentAnswer([]);
+            setCorrectPairs([]);
+        } else {
+            setCurrentAnswer(null);
         }
         setSelectedTerm(null);
         setSelectedDef(null);
-    }, [selectedTerm, selectedDef, handleAnswer]);
-
+    }, [currentQuestionIndex, currentQuizData]);
 
     const handleNext = () => {
-        if (poolIndex < questionPool.length - 1) {
-            setPoolIndex(prev => prev + 1);
-        } else { // End of current pool
-            if (!spacedRepetition) {
-                onComplete(answers);
-                return;
-            }
-            const reviewQueue = answers.reduce((acc, answerData, index) => {
-                const latestAttempt = answerData.attempts[answerData.attempts.length - 1];
-                let isCorrect = false;
-                if (quizData[index].type === 'match-term' || ['multiple-choice', 'true-false', 'fill-in-the-blank'].includes(quizData[index].type)) {
-                    isCorrect = latestAttempt.isCorrect;
-                } else {
-                    isCorrect = latestAttempt.grade === 'correct';
-                }
-
-                if (!isCorrect && answerData.attempts.length < 3) {
-                    acc.push(index);
-                }
-                return acc;
-            }, []);
-
-            if (reviewQueue.length > 0) {
-                setQuestionPool(reviewQueue);
-                setPoolIndex(0);
-                setQuizPhase('review');
-            } else {
-                onComplete(answers);
-            }
+        if (currentQuestionIndex < currentQuizData.length - 1) {
+            setCurrentQuestionIndex(prev => prev + 1);
+            resetQuestionState();
+        } else {
+            onComplete(userAnswers);
         }
     };
 
-    const renderQuestionInput = () => {
-        if (numAttempts >= 3) { // Force move on after 3 failed attempts
-             setTimeout(() => handleNext(), 1500); // Give user time to see feedback
-             return <p>{t('maxAttemptsReached')}</p>;
-        }
+    const handleSubmit = async () => {
+        if (currentAnswer === null || (Array.isArray(currentAnswer) && currentAnswer.length === 0)) return;
+        setIsGrading(true);
 
-        const questionType = currentQuestion.type;
-        if (questionType === 'multiple-choice' || questionType === 'true-false') {
-            const options = questionType === 'true-false' ? ['True', 'False'] : (currentQuestion.options || []);
-            return (
-                <ul className="options-list">
-                    {options.map((option, index) => {
-                         let btnClass = 'option-btn';
-                         if (isAnswered && (correctionStyle === 'immediate' || correctionStyle === 'both')) {
-                             if (option.toLowerCase().trim() === currentQuestion.answer.toLowerCase().trim()) btnClass += ' correct';
-                             else if (selectedOption === option) btnClass += ' incorrect';
-                         } else if (selectedOption === option) btnClass += ' selected';
-                        return (
-                            <li key={index}>
-                                <button className={btnClass} onClick={() => { if (!isAnswered) { setSelectedOption(option); handleAnswer(option); } }} disabled={isAnswered}>
-                                    {option}
-                                </button>
-                            </li>
-                        );
-                    })}
-                </ul>
-            );
-        } else if (questionType === 'match-term') {
-            if (!matchState) return <p>{t('loadingMatchingGame')}</p>;
-            return (
-                <div className="match-game-container">
-                    <div className="match-column">
-                        {matchState.terms.map(term => (
-                            <button key={`term-${term.id}`} className={`match-btn ${selectedTerm?.id === term.id ? 'selected' : ''} ${term.matched ? 'correct' : ''} ${incorrectPair?.termId === term.id ? 'incorrect-selection' : ''}`}
-                                onClick={() => !term.matched && setSelectedTerm(term)} disabled={term.matched}>
-                                {term.text}
+        const originalIndex = quizData.findIndex(q => q.question === currentQuestion.question);
+        let gradingResult = { isCorrect: false, isPartiallyCorrect: false, feedback: '' };
+
+        try {
+            switch (currentQuestion.type) {
+                case 'multiple-choice':
+                case 'true-false':
+                    gradingResult.isCorrect = currentAnswer === currentQuestion.answer;
+                    break;
+                case 'fill-in-the-blank':
+                    gradingResult.isCorrect = currentAnswer.toLowerCase().trim() === currentQuestion.answer.toLowerCase().trim();
+                    break;
+                case 'matching':
+                     const allCorrect = currentQuestion.matchPairs.every(pair => 
+                        currentAnswer.some(ans => ans.term === pair.term && ans.def === pair.definition)
+                    );
+                    gradingResult.isCorrect = allCorrect;
+                    break;
+                case 'short-answer':
+                case 'long-answer':
+                    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+                    const prompt = `Based on the provided context text, evaluate if the user's answer is correct for the given question and model answer. Your response must be a JSON object with three keys: "isCorrect" (boolean, true if the answer is fully correct), "isPartiallyCorrect" (boolean, true if the answer is on the right track but incomplete or has minor errors), and "feedback" (a string providing a concise explanation for why the answer is correct, partially correct, or incorrect, comparing it to the model answer).
+
+                    Context:
+                    ---
+                    ${contextText}
+                    ---
+                    Question: ${currentQuestion.question}
+                    Model Answer: ${currentQuestion.answer}
+                    User's Answer: ${currentAnswer}`;
+                    
+                    const response = await ai.models.generateContent({
+                        model: 'gemini-2.5-flash',
+                        contents: prompt,
+                        config: {
+                            responseMimeType: 'application/json',
+                            responseSchema: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    isCorrect: { type: Type.BOOLEAN },
+                                    isPartiallyCorrect: { type: Type.BOOLEAN },
+                                    feedback: { type: Type.STRING },
+                                },
+                                required: ['isCorrect', 'isPartiallyCorrect', 'feedback']
+                            }
+                        }
+                    });
+                    const result = JSON.parse(response.text);
+                    gradingResult.isCorrect = result.isCorrect;
+                    gradingResult.isPartiallyCorrect = result.isPartiallyCorrect;
+                    gradingResult.feedback = result.feedback;
+                    break;
+                default:
+                    gradingResult.isCorrect = false;
+            }
+        } catch (error) {
+            console.error("Error during grading:", error);
+            alert("An error occurred while grading your answer. Please try again.");
+            setIsGrading(false);
+            return;
+        }
+        
+        const finalFeedback = gradingResult.feedback || currentQuestion.explanation;
+        setFeedback({ ...gradingResult, explanation: finalFeedback });
+
+        const updatedAnswers = [...userAnswers];
+        updatedAnswers[originalIndex].attempts.push({
+            answer: currentAnswer,
+            isCorrect: gradingResult.isCorrect,
+            isPartiallyCorrect: gradingResult.isPartiallyCorrect,
+            feedback: finalFeedback
+        });
+        setUserAnswers(updatedAnswers);
+
+        setIsGraded(true);
+        setIsGrading(false);
+        
+        if (options.spacedRepetition && !gradingResult.isCorrect) {
+            setCurrentQuizData(prev => [...prev, currentQuestion]);
+        }
+        
+        if (options.correctionStyle === 'after') {
+            handleNext();
+        }
+    };
+
+    React.useEffect(() => {
+        if (currentQuestion?.type === 'matching') {
+            setCurrentAnswer([]);
+        }
+    }, [currentQuestionIndex, currentQuestion]);
+
+    const handleMatchSelection = (item, type) => {
+        if (isGraded) return;
+        
+        if (type === 'term') setSelectedTerm(item);
+        if (type === 'def') setSelectedDef(item);
+    };
+
+    React.useEffect(() => {
+        if (selectedTerm && selectedDef) {
+            const isCorrect = currentQuestion.matchPairs.some(p => p.term === selectedTerm && p.definition === selectedDef);
+            if (isCorrect) {
+                setCorrectPairs(prev => [...prev, { term: selectedTerm, def: selectedDef }]);
+                setCurrentAnswer(prev => [...(prev || []), {term: selectedTerm, def: selectedDef}]);
+            } else {
+                // Flash incorrect selection
+                setSelectedTerm(prev => ({...prev, incorrect: true}));
+                setSelectedDef(prev => ({...prev, incorrect: true}));
+                setTimeout(() => {
+                    setSelectedTerm(null);
+                    setSelectedDef(null);
+                }, 500);
+            }
+            setSelectedTerm(null);
+            setSelectedDef(null);
+        }
+    }, [selectedTerm, selectedDef, currentQuestion]);
+
+    const renderAnswerField = () => {
+        switch (currentQuestion.type) {
+            case 'multiple-choice':
+                return (
+                    <div className="options-list">
+                        {currentQuestion.options.map((option, index) => (
+                            <button
+                                key={index}
+                                className={`option-btn 
+                                    ${currentAnswer === option ? 'selected' : ''}
+                                    ${isGraded && option === currentQuestion.answer ? 'correct' : ''}
+                                    ${isGraded && currentAnswer === option && option !== currentQuestion.answer ? 'incorrect' : ''}
+                                `}
+                                onClick={() => !isGraded && setCurrentAnswer(option)}
+                                disabled={isGraded}
+                            >
+                               {String.fromCharCode(65 + index)}. {option}
                             </button>
                         ))}
                     </div>
-                    <div className="match-column">
-                        {matchState.definitions.map(def => (
-                             <button key={`def-${def.id}`} className={`match-btn ${selectedDef?.id === def.id ? 'selected' : ''} ${def.matched ? 'correct' : ''} ${incorrectPair?.defId === def.id ? 'incorrect-selection' : ''}`}
-                                onClick={() => !def.matched && setSelectedDef(def)} disabled={def.matched || !selectedTerm}>
-                                {def.text}
-                             </button>
+                );
+            case 'true-false':
+                return (
+                     <div className="options-list" style={{gridTemplateColumns: '1fr 1fr'}}>
+                        {['True', 'False'].map(option => (
+                            <button
+                                key={option}
+                                className={`option-btn 
+                                    ${currentAnswer === option ? 'selected' : ''}
+                                    ${isGraded && option === currentQuestion.answer ? 'correct' : ''}
+                                    ${isGraded && currentAnswer === option && option !== currentQuestion.answer ? 'incorrect' : ''}
+                                `}
+                                onClick={() => !isGraded && setCurrentAnswer(option)}
+                                disabled={isGraded}
+                            >
+                               {option}
+                            </button>
                         ))}
                     </div>
-                </div>
-            );
-        } else if (['short-answer', 'long-answer', 'fill-in-the-blank'].includes(questionType)) {
-             const TypeIcon = () => (
-                <svg className="input-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-             );
-             return (
-                <div>
-                    <div className="input-group">
-                        <div className="input-wrapper textarea-wrapper">
-                            <TypeIcon />
-                            <textarea value={selectedOption || ''} onChange={(e) => setSelectedOption(e.target.value)}
-                                placeholder={t('typeYourAnswer')} disabled={isAnswered} aria-label="Answer input" />
+                );
+            case 'matching':
+                const terms = currentQuestion.matchPairs.map(p => p.term);
+                const defs = shuffledDefs;
+                
+                return (
+                    <div className="match-game-container">
+                        <div className="match-column">
+                             {terms.map(term => {
+                                const isPaired = correctPairs.some(p => p.term === term);
+                                return (
+                                <button key={term}
+                                    className={`match-btn ${selectedTerm === term ? 'selected' : ''} ${isPaired ? 'correct' : ''}`}
+                                    onClick={() => !isPaired && handleMatchSelection(term, 'term')}
+                                    disabled={isGraded || isPaired}>
+                                    {term}
+                                </button>
+                             );
+                            })}
+                        </div>
+                         <div className="match-column">
+                            {defs.map(def => {
+                                const isPaired = correctPairs.some(p => p.def === def);
+                                return (
+                                <button key={def}
+                                    className={`match-btn ${selectedDef === def ? 'selected' : ''} ${isPaired ? 'correct' : ''}`}
+                                    onClick={() => !isPaired && handleMatchSelection(def, 'def')}
+                                    disabled={isGraded || isPaired}>
+                                    {def}
+                                </button>
+                                );
+                            })}
                         </div>
                     </div>
-                    {!isAnswered && (
-                        <div className="button-group">
-                           <button className="btn btn-primary" onClick={() => handleAnswer(selectedOption)} disabled={!selectedOption || isGrading}>
-                               {isGrading ? t('grading') : t('submitAnswer')}
-                           </button>
-                        </div>
-                    )}
-                </div>
-             );
+                );
+            default: // short-answer, long-answer, fill-in-the-blank
+                return <textarea className="textarea" placeholder={t('typeYourAnswer')} value={currentAnswer || ''} onChange={(e) => setCurrentAnswer(e.target.value)} readOnly={isGraded} />;
         }
-        return <p>Unsupported question type.</p>;
     };
-
-    const progressPercentage = quizPhase === 'initial' 
-        ? ((poolIndex + 1) / questionPool.length) * 100
-        : 100; // Keep it full during review
+    
+    const showFeedback = isGraded && (options.correctionStyle === 'immediate' || options.correctionStyle === 'both');
 
     return (
         <div>
             <div className="quiz-header">
-                <h3>{quizPhase === 'review' ? `${t('reviewingQuestion')} ${poolIndex + 1} ${t('of')} ${questionPool.length}` : `${t('question')} ${currentQuestionIndex + 1} ${t('of')} ${quizData.length}`}</h3>
-                {/* Fix: Added the missing 'isResults' prop to the ExportDropdown component call. */}
-                <ExportDropdown quizData={quizData} userAnswers={answers} options={options} showLoader={showLoader} hideLoader={hideLoader} t={t} contextText={contextText} isResults={false} />
+                <h3>{t('question')} {currentQuestionIndex + 1} {t('of')} {currentQuizData.length}</h3>
             </div>
-            <div className="progress-bar" role="progressbar" aria-valuenow={progressPercentage} aria-valuemin="0" aria-valuemax="100">
-                <div className="progress-bar-inner" style={{ width: `${progressPercentage}%` }}></div>
+            <div className="progress-bar">
+                <div className="progress-bar-inner" style={{ width: `${((currentQuestionIndex + 1) / currentQuizData.length) * 100}%` }}></div>
             </div>
-            <div className="question-container">
-                <p className="question-text" dangerouslySetInnerHTML={{__html: marked.parseInline(currentQuestion.question)}}></p>
-                {renderQuestionInput()}
-            </div>
-            {feedback && (
-                <div className={`feedback ${feedback.class}`} dangerouslySetInnerHTML={{__html: marked.parse(feedback.text || '')}}>
+            <p className="question-text" dangerouslySetInnerHTML={{ __html: marked.parse(currentQuestion.question || '').replace(/<p>|<\/p>/g, '') }}></p>
+            {renderAnswerField()}
+            
+            {showFeedback && feedback && (
+                 <div className={`feedback ${feedback.isCorrect ? 'correct' : feedback.isPartiallyCorrect ? 'partially-correct' : 'incorrect'}`}>
+                    <h4>{feedback.isCorrect ? 'Correct!' : feedback.isPartiallyCorrect ? 'Partially Correct' : 'Incorrect'}</h4>
+                    <p>{feedback.explanation}</p>
                 </div>
             )}
-            {isAnswered && (
-                <div className="button-group">
-                    <button className="btn btn-primary" style={{width: 'auto'}} onClick={handleNext}>
-                        {poolIndex < questionPool.length - 1 ? t('nextButton') : (quizPhase === 'initial' && spacedRepetition ? t('continueToReview') : t('finishQuiz'))}
+
+            <div className="button-group">
+                {!isGraded && options.correctionStyle !== 'after' ? (
+                     <button className="btn btn-primary" onClick={handleSubmit} disabled={isGrading || currentAnswer === null || (Array.isArray(currentAnswer) && currentAnswer.length !== currentQuestion?.matchPairs?.length)}>
+                        {isGrading ? t('grading') : t('submitAnswer')}
                     </button>
-                </div>
-            )}
-        </div>
-    );
-};
-
-
-const Mascot = ({ scorePercentage }) => {
-    const getEmotion = () => {
-        if (scorePercentage >= 80) return 'happy';
-        if (scorePercentage >= 40) return 'neutral';
-        return 'sad';
-    };
-    const emotion = getEmotion();
-
-    const eyeTransform = {
-        happy: 'M16 26 Q24 32 32 26 M48 26 Q56 32 64 26', // Upward curve
-        neutral: 'M16 28 L32 28 M48 28 L64 28', // Straight line
-        sad: 'M16 30 Q24 24 32 30 M48 30 Q56 24 64 30' // Downward curve
-    };
-    
-    return (
-        <svg viewBox="0 0 80 80" className="mascot-svg">
-            <defs>
-                <linearGradient id="grad-body" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" style={{stopColor: '#62d902', stopOpacity:1}} />
-                    <stop offset="100%" style={{stopColor: '#4aa502', stopOpacity:1}} />
-                </linearGradient>
-            </defs>
-            <circle cx="40" cy="45" r="35" fill="url(#grad-body)" />
-            <circle cx="24" cy="28" r="8" fill="white" />
-            <circle cx="56" cy="28" r="8" fill="white" />
-            <circle cx="24" cy="28" r="4" fill="#3c3c3c" />
-            <circle cx="56" cy="28" r="4" fill="#3c3c3c" />
-            <path d={eyeTransform[emotion]} stroke="#3c3c3c" strokeWidth="4" fill="none" strokeLinecap="round" />
-        </svg>
-    );
-}
-
-const ResultsStep = ({ quizData, userAnswers, onRestart, onTryAgain, showLoader, hideLoader, t, contextText, options }) => {
-    
-    const scoreData = React.useMemo(() => {
-        let totalScore = 0;
-        let correctCount = 0;
-
-        userAnswers.forEach((answerData, index) => {
-            if (!answerData || !answerData.attempts || answerData.attempts.length === 0) return;
-            
-            const question = quizData[index];
-            let questionScore = 0;
-
-            const correctAttemptIndex = answerData.attempts.findIndex(attempt => {
-                if (['match-term', 'multiple-choice', 'true-false', 'fill-in-the-blank'].includes(question.type)) return attempt.isCorrect === true;
-                if (['short-answer', 'long-answer'].includes(question.type)) return attempt.grade === 'correct';
-                return false;
-            });
-
-            if (correctAttemptIndex !== -1) {
-                correctCount++;
-                const attemptNumber = correctAttemptIndex + 1;
-                if (attemptNumber === 1) questionScore = 1;
-                else if (attemptNumber === 2) questionScore = 0.5;
-                else if (attemptNumber === 3) questionScore = 0.25;
-            } else {
-                const firstAttempt = answerData.attempts[0];
-                if (firstAttempt && firstAttempt.grade === 'partially-correct') {
-                    questionScore = 0.5;
-                }
-            }
-            totalScore += questionScore;
-        });
-        
-        return { score: totalScore, correctCount };
-    }, [quizData, userAnswers]);
-
-    const scorePercentage = quizData.length > 0 ? (scoreData.score / quizData.length) * 100 : 0;
-    
-    const getAttemptClass = (attempt, question) => {
-        if (['match-term', 'multiple-choice', 'true-false', 'fill-in-the-blank'].includes(question.type)) {
-            return attempt.isCorrect ? 'correct' : 'incorrect';
-        }
-        if (['short-answer', 'long-answer'].includes(question.type)) {
-            return attempt.grade || 'incorrect';
-        }
-        return 'incorrect';
-    };
-
-    return (
-        <div className="results-summary">
-            <div className="results-header">
-                 <Mascot scorePercentage={scorePercentage} />
-                 <h2>{t('quizComplete')}</h2>
-                 <ExportDropdown quizData={quizData} userAnswers={userAnswers} options={options} isResults={true} showLoader={showLoader} hideLoader={hideLoader} t={t} contextText={contextText} />
-            </div>
-             <div className="score-container">
-                <div>
-                    <p style={{margin: 0, textTransform: 'uppercase', color: 'var(--gray-medium)'}}>{t('score')}</p>
-                    <div className="score">{Math.round(scorePercentage)}%</div>
-                </div>
-                <div>
-                    <p style={{margin: 0, textTransform: 'uppercase', color: 'var(--gray-medium)'}}>{t('correct')}</p>
-                    <div className="score" style={{color: 'var(--gray-dark)'}}>{scoreData.correctCount} / {quizData.length}</div>
-                </div>
-            </div>
-            
-            <div className="results-details">
-                <h3>{t('reviewAnswers')}</h3>
-                {quizData.map((question, index) => {
-                    const userAnswerData = userAnswers[index] || { attempts: [] };
-                    return (
-                        <div key={index} className="result-question">
-                            <p><strong>Q: {question.question}</strong></p>
-                            
-                            {userAnswerData.attempts.length > 1 && (
-                                <ul className="attempt-history">
-                                    {userAnswerData.attempts.map((attempt, attemptIdx) => {
-                                        const attemptClass = getAttemptClass(attempt, question);
-                                        return (
-                                        <li key={attemptIdx} className={`attempt-item ${attemptClass}`}>
-                                            <span className="attempt-label">Attempt {attemptIdx + 1}</span>
-                                            <span className={`attempt-answer ${attemptClass}`}>{attempt.text || 'N/A'}</span>
-                                        </li>
-                                        )
-                                    })}
-                                </ul>
-                            )}
-                            
-                            {userAnswerData.attempts.length === 1 && (
-                                 <p>{t('yourAnswer')}: <span className={getAttemptClass(userAnswerData.attempts[0], question)}>{userAnswerData.attempts[0].text || 'No answer'}</span></p>
-                            )}
-
-                             {!userAnswerData.attempts.some(a => getAttemptClass(a, question) === 'correct') && (
-                                <p><strong>{t('correctAnswer')}:</strong> {question.answer}</p>
-                             )}
-
-                            {userAnswerData.attempts[userAnswerData.attempts.length-1]?.aiFeedback && (
-                                <p><em><strong>{t('aiFeedback')}:</strong> {userAnswerData.attempts[userAnswerData.attempts.length-1].aiFeedback}</em></p>
-                            )}
-                            <p><em><strong>{t('explanation')}:</strong> {question.explanation}</em></p>
-                        </div>
-                    )
-                })}
-            </div>
-
-            <div className="button-group" style={{gap: '1rem', flexDirection: 'column'}}>
-                <button className="btn btn-primary" onClick={onTryAgain}>{t('tryAgain')}</button>
-                <button className="btn" onClick={onRestart}>{t('createNewQuiz')}</button>
+                ) : (
+                     <button className="btn btn-primary" onClick={handleNext}>
+                        {currentQuestionIndex < currentQuizData.length - 1 ? t('nextButton') : t('finishQuiz')}
+                    </button>
+                )}
             </div>
         </div>
     );
 };
 
-// Fix: Add userAnswers and isResults to props to match component usage in parent components.
-const ExportDropdown = ({ quizData, userAnswers, isResults, contextText, options, showLoader, hideLoader, t }) => {
-    const [modalContent, setModalContent] = React.useState(null);
-    const [copyButtonText, setCopyButtonText] = React.useState(t('copy'));
+const AudioModal = ({ onClose, onConfirm, t }) => {
+    const [pause, setPause] = React.useState(10);
+    return (
+        <div className="modal-overlay">
+            <div className="modal-content">
+                <h3>{t('audioExportSettings')}</h3>
+                <div className="input-group">
+                    <label htmlFor="pause-duration">{t('pauseDuration')}: {pause} {t('seconds')}</label>
+                    <input type="range" id="pause-duration" min="1" max="10" value={pause} onChange={(e) => setPause(parseInt(e.target.value, 10))} />
+                </div>
+                <div className="modal-footer">
+                    <button className="btn" onClick={onClose}>{t('cancel')}</button>
+                    <button className="btn btn-primary" onClick={() => onConfirm(pause)}>{t('generateAudio')}</button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
-    const handleSaveQuizToCode = () => {
-        try {
-            const dataToSave = { quizData, options, contextText };
-            const encoded = btoa(JSON.stringify(dataToSave));
-            setModalContent(encoded);
-        } catch (error) {
-            console.error("Error encoding quiz:", error);
-            alert("Sorry, there was an error creating the quiz code.");
-        }
+
+const ExportDropdown = ({ quizData, onEnterFlashcards, quizOptions, contextText, showLoader, hideLoader, t, language }) => {
+    const [modal, setModal] = React.useState(null); 
+    const [copied, setCopied] = React.useState(false);
+
+    const handleSaveToCode = () => {
+        const dataToSave = {
+            quizData,
+            options: quizOptions,
+            contextText,
+        };
+        const jsonString = JSON.stringify(dataToSave);
+        const encodedString = btoa(encodeURIComponent(jsonString).replace(/%([0-9A-F]{2})/g, (match, p1) => {
+            return String.fromCharCode(parseInt(p1, 16));
+        }));
+        setModal({type: 'code', content: encodedString });
     };
 
-    const handleCopyToClipboard = () => {
-        if (modalContent) {
-            navigator.clipboard.writeText(modalContent).then(() => {
-                setCopyButtonText(t('copied'));
-                setTimeout(() => setCopyButtonText(t('copy')), 2000);
-            }, (err) => {
-                console.error('Could not copy text: ', err);
-            });
-        }
-    };
-
-    const handleSaveAsPdf = async () => {
+    const handleSaveToPdf = async () => {
         showLoader(t('generatingPdf'));
-        try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-            let topic = "Quiz";
-            if (contextText) {
-                const topicResponse = await ai.models.generateContent({
-                    model: 'gemini-2.5-flash',
-                    contents: `Generate a short, 3-5 word title for a quiz based on the following text. Respond with only the title text. Text: "${contextText.substring(0, 500)}"`,
-                });
-                topic = topicResponse.text.trim();
+        const { jsPDF } = jspdf;
+        const doc = new jsPDF();
+        const pageHeight = doc.internal.pageSize.height;
+        const pageWidth = doc.internal.pageSize.width;
+        const margin = 15;
+        let y = margin;
+        
+        const matchingOrders = {};
+
+        const checkPageBreak = (neededHeight) => {
+            if (y + neededHeight > pageHeight - margin) {
+                doc.addPage();
+                y = margin;
+                return true;
             }
-            const filename = topic.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_quiz.pdf';
-            
-            // Use a timeout to allow the loader to render before the blocking PDF generation starts.
-            setTimeout(() => {
-                const { jsPDF } = (window as any).jspdf;
-                const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-                
-                const MARGIN = 15;
-                const PAGE_WIDTH = doc.internal.pageSize.getWidth();
-                const PAGE_HEIGHT = doc.internal.pageSize.getHeight();
-                const CONTENT_WIDTH = PAGE_WIDTH - (MARGIN * 2);
-                let y = MARGIN;
-
-                const checkPageBreak = (neededHeight) => {
-                    if (y + neededHeight > PAGE_HEIGHT - MARGIN) {
-                        doc.addPage();
-                        y = MARGIN;
-                        return true;
-                    }
-                    return false;
-                };
-                
-                // --- TITLE PAGE ---
-                doc.setFont('Helvetica', 'bold');
-                doc.setFontSize(24);
-                doc.text(topic, PAGE_WIDTH / 2, 80, { align: 'center' });
-                doc.setFontSize(16);
-                doc.setFont('Helvetica', 'normal');
-                doc.text("Quiz", PAGE_WIDTH / 2, 95, { align: 'center' });
-
-
-                // --- QUESTIONS SECTION ---
-                doc.addPage();
-                y = MARGIN;
-                doc.setFont('Helvetica', 'bold');
-                doc.setFontSize(20);
-                doc.text("Questions", MARGIN, y);
-                y += 15;
-
-                quizData.forEach((q, i) => {
-                    const questionText = doc.splitTextToSize(`Q${i + 1}: ${q.question}`, CONTENT_WIDTH);
-                    checkPageBreak(questionText.length * 5 + 15); // Estimate height
-                    
-                    doc.setFont('Helvetica', 'bold');
-                    doc.setFontSize(12);
-                    doc.text(questionText, MARGIN, y);
-                    y += questionText.length * 5;
-                    
-                    doc.setFont('Helvetica', 'normal');
-                    doc.setFontSize(11);
-                    y += 5; // spacing before options/answer area
-
-                    switch (q.type) {
-                        case 'multiple-choice':
-                            q.options.forEach(opt => {
-                                 checkPageBreak(8);
-                                 doc.circle(MARGIN + 2.5, y - 1.5, 2);
-                                 doc.text(opt, MARGIN + 7, y);
-                                 y += 7;
-                            });
-                            break;
-                        case 'true-false':
-                            checkPageBreak(14);
-                            doc.circle(MARGIN + 2.5, y - 1.5, 2);
-                            doc.text('True', MARGIN + 7, y);
-                            y += 7;
-                            doc.circle(MARGIN + 2.5, y - 1.5, 2);
-                            doc.text('False', MARGIN + 7, y);
-                            y += 7;
-                            break;
-                        case 'match-term':
-                            const terms = q.matchPairs.map(p => p.term);
-                            const shuffledDefs = [...q.matchPairs].sort(() => Math.random() - 0.5).map(p => p.definition);
-                            const totalHeight = (q.matchPairs.length * 15) + 20;
-                            checkPageBreak(totalHeight);
-
-                            let listY = y;
-                            doc.setFont('Helvetica', 'bold');
-                            doc.text("Terms", MARGIN, listY);
-                            doc.text("Definitions", PAGE_WIDTH / 2, listY);
-                            doc.setFont('Helvetica', 'normal');
-                            listY += 7;
-
-                            for(let j=0; j<q.matchPairs.length; j++) {
-                                const termText = doc.splitTextToSize(`${j+1}. ${terms[j]}`, CONTENT_WIDTH / 2 - 5);
-                                doc.text(termText, MARGIN, listY);
-
-                                const defText = doc.splitTextToSize(`${String.fromCharCode(65 + j)}. ${shuffledDefs[j]}`, CONTENT_WIDTH / 2 - 5);
-                                doc.text(defText, PAGE_WIDTH / 2, listY);
-                                listY += Math.max(termText.length, defText.length) * 5 + 4;
-                            }
-                            y = listY + 3;
-                            doc.setFont('Helvetica', 'bold');
-                            doc.text("Answers:", MARGIN, y);
-                            doc.setFont('Helvetica', 'normal');
-                            y += 7;
-                            for(let j=0; j<terms.length; j++) {
-                                doc.text(`${j+1}. ______`, MARGIN + (j % 4) * 40, y);
-                                if ((j+1) % 4 === 0) y += 7;
-                            }
-                            if (terms.length % 4 !== 0) y += 7;
-                            break;
-                        case 'short-answer':
-                            checkPageBreak(20);
-                            for(let j=0; j<3; j++) {
-                                doc.setDrawColor(200, 200, 200);
-                                doc.line(MARGIN, y, PAGE_WIDTH - MARGIN, y);
-                                y += 7;
-                            }
-                            break;
-                        case 'long-answer':
-                            checkPageBreak(40);
-                             for(let j=0; j<6; j++) {
-                                doc.setDrawColor(200, 200, 200);
-                                doc.line(MARGIN, y, PAGE_WIDTH - MARGIN, y);
-                                y += 7;
-                            }
-                            break;
-                        case 'fill-in-the-blank':
-                            y += 5;
-                            break;
-                    }
-                    y += 10; // Spacing between questions
-                });
-
-                // --- ANSWERS SECTION ---
-                doc.addPage();
-                y = MARGIN;
-                doc.setFont('Helvetica', 'bold');
-                doc.setFontSize(20);
-                doc.text("Answer Key", MARGIN, y);
-                y += 15;
-                
-                quizData.forEach((q, i) => {
-                    const qText = doc.splitTextToSize(`Q${i + 1}: ${q.question}`, CONTENT_WIDTH);
-                    let answer;
-                     if(q.type === 'match-term') {
-                        const shuffledDefs = [...q.matchPairs].sort(() => Math.random() - 0.5);
-                        const originalIndices = q.matchPairs.map(p => shuffledDefs.findIndex(sp => sp.definition === p.definition));
-                        answer = q.matchPairs.map((p, idx) => `${idx + 1}. ${String.fromCharCode(65 + originalIndices[idx])}. (${p.term} - ${p.definition})`).join('\n');
-                     } else {
-                        answer = q.answer;
-                     }
-                    const aText = doc.splitTextToSize(`Answer: ${answer}`, CONTENT_WIDTH - 5);
-                    const eText = doc.splitTextToSize(`Explanation: ${q.explanation}`, CONTENT_WIDTH - 5);
-
-                    const neededHeight = (qText.length + aText.length + eText.length) * 5 + 10;
-                    checkPageBreak(neededHeight);
-
-                    doc.setFont('Helvetica', 'bold');
-                    doc.setFontSize(12);
-                    doc.text(qText, MARGIN, y);
-                    y += qText.length * 5 + 3;
-                    
-                    doc.setFont('Helvetica', 'normal');
-                    doc.setFontSize(11);
-                    
-                    doc.setTextColor(34, 139, 34); // ForestGreen
-                    doc.text(aText, MARGIN + 5, y);
-                    y += aText.length * 5 + 3;
-                    
-                    doc.setTextColor(128, 128, 128); // Gray
-                    doc.text(eText, MARGIN + 5, y);
-                    y += eText.length * 5 + 10;
-
-                    doc.setTextColor(0, 0, 0); // Reset color
-                });
-                
-                doc.save(filename);
-                hideLoader();
-            }, 100);
-
-        } catch(error) {
-            console.error("Error generating PDF:", error);
-            alert("Sorry, there was an error generating the PDF file.");
-            hideLoader();
-        }
-    };
-
-    const decode = (base64) => {
-        const binaryString = atob(base64);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-        return bytes;
-    };
-
-    const decodeAudioData = async (data, ctx, sampleRate, numChannels) => {
-        const dataInt16 = new Int16Array(data.buffer);
-        const frameCount = dataInt16.length / numChannels;
-        const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
-        for (let channel = 0; channel < numChannels; channel++) {
-            const channelData = buffer.getChannelData(channel);
-            for (let i = 0; i < frameCount; i++) channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
-        }
-        return buffer;
-    };
-
-    const audioBufferToWav = (buffer) => {
-        const [numChannels, sampleRate] = [buffer.numberOfChannels, buffer.sampleRate];
-        const bitDepth = 16;
-        let result = new Float32Array(buffer.length * numChannels);
-        for(let c = 0; c < numChannels; c++) result.set(buffer.getChannelData(c), c * buffer.length);
-        const dataLength = result.length * (bitDepth / 8);
-        const view = new DataView(new ArrayBuffer(44 + dataLength));
-
-        const writeString = (view, offset, string) => {
-            for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+            return false;
         };
 
-        let o = 0;
-        writeString(view, o, 'RIFF'); o += 4; view.setUint32(o, 36 + dataLength, true); o += 4;
-        writeString(view, o, 'WAVE'); o += 4; writeString(view, o, 'fmt '); o += 4;
-        view.setUint32(o, 16, true); o += 4; view.setUint16(o, 1, true); o += 2;
-        view.setUint16(o, numChannels, true); o += 2; view.setUint32(o, sampleRate, true); o += 4;
-        view.setUint32(o, sampleRate * numChannels * (bitDepth / 8), true); o += 4;
-        view.setUint16(o, numChannels * (bitDepth / 8), true); o += 2;
-        view.setUint16(o, bitDepth, true); o += 2;
-        writeString(view, o, 'data'); o += 4; view.setUint32(o, dataLength, true); o += 4;
+        // --- RENDER HEADER ---
+        doc.setFont('Helvetica', 'bold');
+        doc.setFontSize(20);
+        doc.text('OmniQuiz Examination', pageWidth / 2, y, { align: 'center' });
+        y += 15;
 
-        for (let i = 0; i < result.length; i++, o += 2) {
-            let s = Math.max(-1, Math.min(1, result[i]));
-            view.setInt16(o, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-        }
-        return new Blob([view], {type: 'audio/wav'});
+        doc.setFont('Helvetica', 'normal');
+        doc.setFontSize(12);
+        const fieldY = y;
+        doc.text('Name:', margin, fieldY);
+        doc.line(margin + 15, fieldY + 1, margin + 80, fieldY + 1);
+
+        doc.text('Date:', pageWidth - margin - 50, fieldY);
+        doc.line(pageWidth - margin - 38, fieldY + 1, pageWidth - margin, fieldY + 1);
+        y += 10;
+        
+        doc.text('Score:', margin, y);
+        doc.line(margin + 16, y + 1, margin + 40, y + 1);
+        y += 10;
+        
+        doc.setLineWidth(0.5);
+        doc.line(margin, y, pageWidth - margin, y);
+        y += 10;
+
+        // --- RENDER QUESTIONS ---
+        quizData.forEach((q, index) => {
+            checkPageBreak(50); 
+            doc.setFont('Helvetica', 'bold');
+            doc.setFontSize(12);
+            const questionText = `${index + 1}. ${q.question}`;
+            const questionLines = doc.splitTextToSize(questionText, pageWidth - (margin * 2));
+            if (checkPageBreak(questionLines.length * 7) && questionLines.length > 1) {
+                doc.setFont('Helvetica', 'bold');
+                doc.setFontSize(12);
+            }
+            doc.text(questionLines, margin, y);
+            y += questionLines.length * 7 + 5;
+
+            doc.setFont('Helvetica', 'normal');
+            doc.setFontSize(11);
+
+            switch(q.type) {
+                case 'multiple-choice':
+                    if (q.options) {
+                        q.options.forEach((opt, optIndex) => {
+                            const optionChar = String.fromCharCode(65 + optIndex);
+                            checkPageBreak(10);
+                            doc.circle(margin + 4, y, 2.5);
+                            const optionText = `${optionChar}) ${opt}`;
+                            const optLines = doc.splitTextToSize(optionText, pageWidth - (margin * 2) - 15);
+                            doc.text(optLines, margin + 10, y + 1.5);
+                            y += optLines.length * 6 + 4;
+                        });
+                    }
+                    break;
+                case 'true-false':
+                    checkPageBreak(15);
+                    doc.rect(margin + 4, y - 2.5, 4, 4);
+                    doc.text('True', margin + 12, y);
+                    doc.rect(margin + 35, y - 2.5, 4, 4);
+                    doc.text('False', margin + 42, y);
+                    y += 10;
+                    break;
+                case 'fill-in-the-blank':
+                    checkPageBreak(15);
+                    y += 3;
+                    doc.setLineWidth(0.2);
+                    doc.line(margin, y, margin + 120, y);
+                    y += 10;
+                    break;
+                case 'short-answer':
+                    checkPageBreak(35);
+                    y += 3;
+                    doc.setLineWidth(0.2);
+                    for(let i=0; i<3; i++) {
+                        doc.line(margin, y, pageWidth - margin, y);
+                        y += 8;
+                    }
+                    break;
+                case 'long-answer':
+                    checkPageBreak(60);
+                    y += 3;
+                    doc.setLineWidth(0.2);
+                    for(let i=0; i<6; i++) {
+                        doc.line(margin, y, pageWidth - margin, y);
+                        y += 8;
+                    }
+                    break;
+                case 'matching':
+                    if (q.matchPairs) {
+                        checkPageBreak(q.matchPairs.length * 15);
+                        if (!matchingOrders[index]) {
+                            matchingOrders[index] = [...q.matchPairs.map(p => p.definition)].sort(() => Math.random() - 0.5);
+                        }
+                        const shuffledDefs = matchingOrders[index];
+                        const startY = y;
+                        let leftY = startY;
+                        let rightY = startY;
+
+                        q.matchPairs.forEach((pair, pairIndex) => {
+                            const termText = `${pairIndex + 1}. ${pair.term}`;
+                            const termLines = doc.splitTextToSize(termText, (pageWidth/2) - margin - 18);
+                            doc.text(termLines, margin, leftY);
+                            doc.line(margin + (pageWidth/2) - margin - 15, leftY + 1, margin + (pageWidth/2) - margin - 8, leftY + 1);
+                            leftY += termLines.length * 6 + 10;
+                        });
+                        
+                        shuffledDefs.forEach((def, defIndex) => {
+                            const defChar = String.fromCharCode(65 + defIndex);
+                            const defText = `${defChar}. ${def}`;
+                            const defLines = doc.splitTextToSize(defText, (pageWidth/2) - (margin * 2));
+                            doc.text(defLines, pageWidth / 2, rightY);
+                            rightY += defLines.length * 6 + 10;
+                        });
+                        y = Math.max(leftY, rightY);
+                    }
+                    break;
+            }
+            y += 12;
+        });
+
+        // --- RENDER ANSWER KEY ---
+        doc.addPage();
+        y = margin;
+        doc.setFont('Helvetica', 'bold');
+        doc.setFontSize(16);
+        doc.text('Answer Key', pageWidth / 2, y, { align: 'center' });
+        y += 15;
+
+        quizData.forEach((q, index) => {
+            checkPageBreak(30);
+            doc.setFont('Helvetica', 'bold');
+            doc.setFontSize(12);
+            
+            let answerText = '';
+            if (q.type === 'matching' && q.matchPairs) {
+                const shuffledDefsForAnswer = matchingOrders[index];
+                answerText = q.matchPairs.map((p, i) => {
+                    const defIndex = shuffledDefsForAnswer.findIndex(def => def === p.definition);
+                    const defChar = String.fromCharCode(65 + defIndex);
+                    return `${i + 1} → ${defChar}`;
+                }).join(';  ');
+            } else {
+                answerText = Array.isArray(q.answer) ? q.answer.join(', ') : q.answer;
+            }
+
+            const keyText = `${index + 1}. ${answerText}`;
+            const keyLines = doc.splitTextToSize(keyText, pageWidth - margin * 2);
+            doc.text(keyLines, margin, y);
+            y += keyLines.length * 7;
+
+            doc.setFont('Helvetica', 'italic');
+            doc.setFontSize(10);
+            const explanationLines = doc.splitTextToSize(`Explanation: ${q.explanation}`, pageWidth - margin * 2 - 5);
+            doc.text(explanationLines, margin + 5, y);
+            y += explanationLines.length * 5 + 8;
+        });
+        
+        doc.save('OmniQuiz_Exam.pdf');
+        hideLoader();
     };
 
-    const handleGenerateAudio = async () => {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-        
+    const handleGenerateAudio = async (pauseDuration) => {
+        setModal(null);
+        const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
+        const languageMap = { en: { voice: 'Zephyr' }, es: { voice: 'Puck' }, fr: { voice: 'Charon' } };
+        const voiceName = languageMap[language]?.voice || 'Zephyr';
+
         try {
             const audioBuffers = [];
+            const silence = new Uint8Array(24000 * 2 * pauseDuration).fill(0); // 24kHz sample rate, 16-bit
+            
             for (let i = 0; i < quizData.length; i++) {
-                showLoader(`${t('generatingAudioFor')} ${i+1}/${quizData.length}...`);
                 const q = quizData[i];
-                const textToSpeak = `Question ${i+1}. ${q.question}. <break time="5s" /> The answer is... ${q.answer}.`;
+                showLoader(`${t('generatingAudioFor')} ${i + 1}/${quizData.length}...`);
+                
+                let textToSpeak = `Question ${i + 1}. ${q.question}. `;
+                 if (q.type === 'multiple-choice' && q.options) {
+                    textToSpeak += q.options.map((opt, idx) => `Option ${String.fromCharCode(65 + idx)}: ${opt}.`).join(' ');
+                }
                 
                 const response = await ai.models.generateContent({
-                    model: 'gemini-2.5-flash-preview-tts',
+                    model: "gemini-2.5-flash-preview-tts",
                     contents: [{ parts: [{ text: textToSpeak }] }],
                     config: {
                         responseModalities: [Modality.AUDIO],
-                        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
-                    },
+                        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } }
+                    }
                 });
-                
+
                 const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
                 if (base64Audio) {
-                    audioBuffers.push(await decodeAudioData(decode(base64Audio), audioContext, 24000, 1));
+                    const binaryString = atob(base64Audio);
+                    const len = binaryString.length;
+                    const bytes = new Uint8Array(len);
+                    for (let j = 0; j < len; j++) {
+                        bytes[j] = binaryString.charCodeAt(j);
+                    }
+                    audioBuffers.push(bytes);
+                    if (i < quizData.length - 1) {
+                         audioBuffers.push(silence);
+                    }
                 }
             }
-
+            
             showLoader(t('combiningAudio'));
-            if (audioBuffers.length > 0) {
-                const totalLength = audioBuffers.reduce((acc, buf) => acc + buf.length, 0);
-                const combinedBuffer = audioContext.createBuffer(1, totalLength, 24000);
-                let offset = 0;
-                for (const buffer of audioBuffers) {
-                    combinedBuffer.getChannelData(0).set(buffer.getChannelData(0), offset);
-                    offset += buffer.length;
-                }
 
-                const wavBlob = audioBufferToWav(combinedBuffer);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = URL.createObjectURL(wavBlob);
-                a.download = 'quiz-audio.wav';
-                document.body.appendChild(a);
-                a.click();
-                URL.revokeObjectURL(a.href);
-                a.remove();
+            // Combine and create WAV
+            const totalLength = audioBuffers.reduce((sum, buf) => sum + buf.length, 0);
+            const combined = new Uint8Array(totalLength);
+            let offset = 0;
+            for (const buffer of audioBuffers) {
+                combined.set(buffer, offset);
+                offset += buffer.length;
             }
-        } catch(error) {
-            console.error("Error generating audio:", error);
-            alert("Sorry, there was an error generating the audio file.");
+
+            const wavHeader = createWavHeader(totalLength, 24000, 1, 16);
+            const wavBlob = new Blob([wavHeader, combined], { type: 'audio/wav' });
+            const url = URL.createObjectURL(wavBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'OmniQuiz_Audio.wav';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+        } catch (error) {
+             console.error("Error generating audio:", error);
+             alert("Failed to generate audio. Please check your API key permissions and try again.");
         } finally {
             hideLoader();
         }
     };
+    
+    const createWavHeader = (dataLength, sampleRate, numChannels, bitsPerSample) => {
+        const buffer = new ArrayBuffer(44);
+        const view = new DataView(buffer);
+        const writeString = (offset, string) => {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        };
+        const blockAlign = numChannels * bitsPerSample / 8;
+        const byteRate = sampleRate * blockAlign;
+
+        writeString(0, 'RIFF');
+        view.setUint32(4, 36 + dataLength, true);
+        writeString(8, 'WAVE');
+        writeString(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true); // PCM
+        view.setUint16(22, numChannels, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, byteRate, true);
+        view.setUint16(32, blockAlign, true);
+        view.setUint16(34, bitsPerSample, true);
+        writeString(36, 'data');
+        view.setUint32(40, dataLength, true);
+
+        return view;
+    };
+
 
     return (
         <>
-        {modalContent && (
-            <div className="modal-overlay" onClick={() => setModalContent(null)}>
-                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                    <h3>{t('yourQuizCode')}</h3>
-                    <textarea readOnly value={modalContent}></textarea>
-                    <div className="modal-footer">
-                         <button className="btn" onClick={() => setModalContent(null)}>{t('close')}</button>
-                         <button className="btn btn-primary" onClick={handleCopyToClipboard}>{copyButtonText}</button>
-                    </div>
+        <div className="dropdown">
+            <button className="btn">{t('export')} &#9662;</button>
+            <div className="dropdown-content">
+                <button onClick={handleSaveToPdf}>{t('saveAsPdf')}</button>
+                <button onClick={() => setModal({ type: 'audio' })}>{t('generateAudio')}</button>
+                <button onClick={handleSaveToCode}>{t('saveToCode')}</button>
+                <button onClick={onEnterFlashcards}>{t('exportToFlashcards')}</button>
+            </div>
+        </div>
+        {modal?.type === 'audio' && <AudioModal onClose={() => setModal(null)} onConfirm={handleGenerateAudio} t={t} />}
+        {modal?.type === 'code' && (
+            <div className="modal-overlay">
+                <div className="modal-content">
+                     <h3>{t('yourQuizCode')}</h3>
+                     <textarea readOnly value={modal.content}></textarea>
+                     <div className="modal-footer">
+                         <button className="btn" onClick={() => {
+                            navigator.clipboard.writeText(modal.content);
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 2000);
+                         }}>{copied ? t('copied') : t('copy')}</button>
+                         <button className="btn btn-primary" onClick={() => setModal(null)}>{t('close')}</button>
+                     </div>
                 </div>
             </div>
         )}
-        <div className="dropdown">
-            <button className="btn">{t('export')}</button>
-            <div className="dropdown-content">
-                <button onClick={handleSaveAsPdf}>{t('saveAsPdf')}</button>
-                <button onClick={handleGenerateAudio}>{t('generateAudio')}</button>
-                <button onClick={handleSaveQuizToCode}>{t('saveToCode')}</button>
-            </div>
-        </div>
         </>
     );
 };
 
-// Error Boundary Implementation
-class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null; errorInfo: React.ErrorInfo | null; }> {
-  // Fix: Replaced the state property initializer with a constructor. This resolves
-  // TypeScript errors where inherited component properties like `props` and
-  // `setState` were not being recognized.
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    this.setState({ errorInfo });
-    console.error("Uncaught error:", error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return <ErrorFallback error={this.state.error} errorInfo={this.state.errorInfo} />;
+const ResultsStep = ({ results, quizData, onRestart, onTryAgain, t }) => {
+    
+    const calculateScore = () => {
+        return results.reduce((score, result, index) => {
+            const lastAttempt = result.attempts[result.attempts.length - 1];
+            if (lastAttempt?.isCorrect) {
+                return score + 1;
+            }
+            return score;
+        }, 0);
     }
-    return this.props.children;
-  }
-}
-
-const ErrorFallback = ({ error, errorInfo }: { error: Error | null; errorInfo: React.ErrorInfo | null; }) => {
-    const handleEmailReport = () => {
-        const subject = "OmniQuiz 2.0 Error Report";
-        const body = `
-Hello OmniQuiz Support,
-
-I encountered an error while using the app. Here are the details:
-
-Error Message:
-${error?.toString()}
-
-Component Stack:
-${errorInfo?.componentStack}
-
-Please describe what you were doing when the error occurred:
-[Your description here]
-
-Thank you!
-        `;
-        window.location.href = `mailto:support@omniquiz.ai?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    };
-
-    const handleGoHome = () => {
-        window.location.reload();
-    };
+    const score = calculateScore();
 
     return (
-        <div className="error-boundary">
-            <AppLogo />
-            <h2>Oops! Something Went Wrong.</h2>
-            <p>We're sorry for the inconvenience. Our team has been notified, but you can also help by sending us an error report.</p>
-            <div className="button-group">
-                <button className="btn btn-primary" onClick={handleEmailReport}>Email Report</button>
-                <button className="btn" onClick={handleGoHome}>Return to Homepage</button>
+        <div className="results-container">
+            <div className="results-summary">
+                <div className="results-header">
+                    <h2>{t('quizComplete')}</h2>
+                </div>
+                <div className="score-container">
+                    <div>
+                        <p>{t('score')}</p>
+                        <div className="score">{Math.round((score / quizData.length) * 100)}%</div>
+                    </div>
+                     <div>
+                        <p>{t('correct')}</p>
+                        <div className="score">{score} / {quizData.length}</div>
+                    </div>
+                </div>
+                <div className="button-group" style={{gap: '1rem', flexDirection: 'column'}}>
+                     <button className="btn" onClick={onTryAgain}>{t('tryAgain')}</button>
+                     <button className="btn btn-primary" onClick={onRestart}>{t('createNewQuiz')}</button>
+                </div>
+            </div>
+            
+            <div className="results-details">
+                <h2>{t('reviewAnswers')}</h2>
+                 {quizData.map((q, index) => {
+                    const userAnswerData = results[index];
+                    const lastAttempt = userAnswerData?.attempts[userAnswerData.attempts.length - 1];
+                    const status = lastAttempt?.isCorrect ? 'correct' : lastAttempt?.isPartiallyCorrect ? 'partially-correct' : 'incorrect';
+                    
+                    let displayAnswer = '';
+                    if (lastAttempt?.answer) {
+                        if (q.type === 'matching' && Array.isArray(lastAttempt.answer)) {
+                            displayAnswer = lastAttempt.answer.map(p => `• ${p.term} -> ${p.def}`).join('\n');
+                        } else {
+                            displayAnswer = lastAttempt.answer;
+                        }
+                    }
+
+                    return (
+                        <div key={index} className="result-question">
+                            <p><strong>{index + 1}. {q.question}</strong></p>
+                            <p><span className="attempt-label">{t('yourAnswer')}:</span> <span className={status}>{displayAnswer || 'No answer'}</span></p>
+                            {!lastAttempt?.isCorrect && <p><span className="attempt-label">{t('correctAnswer')}:</span> {q.type === 'matching' ? q.matchPairs.map(p=>`• ${p.term}: ${p.definition}`).join('\n') : q.answer}</p>}
+                            <p><span className="attempt-label">{t(lastAttempt?.isCorrect ? 'explanation' : 'aiFeedback')}:</span> <em>{lastAttempt?.feedback || q.explanation}</em></p>
+                        </div>
+                    );
+                 })}
             </div>
         </div>
     );
 };
 
-
-ReactDOM.createRoot(document.getElementById('root')).render(
-    <ErrorBoundary>
-        <App />
-    </ErrorBoundary>
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+    <React.StrictMode>
+        <ErrorBoundary>
+            <App />
+        </ErrorBoundary>
+    </React.StrictMode>
 );
